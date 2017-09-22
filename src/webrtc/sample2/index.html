@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="WebRTC code samples">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta itemprop="description" content="Client-side WebRTC code samples">
+  <meta itemprop="image" content="./images/webrtc-icon-192x192.png">
+  <meta itemprop="name" content="WebRTC code samples">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta id="theme-color" name="theme-color" content="#ffffff">
+  <base target="_blank">
+  <title>YUJIN 1:1 Peer connection</title>
+  <link rel="icon" sizes="192x192" href="./images/webrtc-icon-192x192.png">
+  <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
+  <link rel="stylesheet" href="./css/main.css" />
+</head>
+<body>
+  <div id="videos" class="hidden">
+    <div>
+      <button id="hangupButton">Hang Up</button>
+    </div>
+    <div style="position:relative;">
+      <video id="remoteVideo" autoplay playsinline></video>
+      <video id="localVideo" autoplay muted playsinline></video>
+    </div>
+  </div>
+  <div id="room-selection">
+  	<p>방이름을 입력하세요.</p>
+  	방번호 : <input type=text id="room-id" value="room-1">
+  	<br>
+  	사용자 이름 : <input type=text id="name">
+    <button id="startButton">입장</button>
+    <br>
+  	방번호는 문자,숫자,언더바(_),하이픈(-) 만 가능해요.
+    <hr>
+    윈도우/맥PC는 크롬 또는 Firefox브라우저를 사용해 주세요. <br>
+    안드로이드 계열 스마트기기 사용자는 크롬브라우저를 사용해주세요.<br>
+    아이폰은 iOS 11에서 사파리 브라우저를 사용해주세요. <br>
+  </div>
+<!-- https://www.html5rocks.com/en/tutorials/webrtc/basics/ 참고 
+'adapter.js' is a JavaScript shim for WebRTC, maintained by Google with help from the WebRTC community, that abstracts vendor prefixes, browser differences and spec changes
+'adapter.js'는 브라우저의 차이. spec의 변화를 추상화하였다. 
+-->
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.3.0/firebase.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>
