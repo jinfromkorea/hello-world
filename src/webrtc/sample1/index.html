@@ -51,53 +51,53 @@ var database = firebase.database().ref('/solutionpot');
 // https://firebase.google.com/docs/reference/js/firebase.database.Query 참고
 // on method에는 5가지 event가 사용 가능함. value, child_added, child_removed, child_changed, child_moved     
 database.on('child_added', function(data, pre){
-    console.log('##[database][child_added] : ' + yourId + "/" + data.val().sender);
-    console.log(data);
-    console.log(pre);
+    //console.log('##[database][child_added] : ' + yourId + "/" + data.val().sender);
+    //console.log(data);
+    //console.log(pre);
     var msg = JSON.parse(data.val().message);
     var sender = data.val().sender;
     if (sender != yourId) {
         if (msg.ice != undefined) {
-            console.log('----------->[child_added] addIceCandidate(new RTCIceCandidate(' + msg.ice+'))');
-            console.log(msg.ice);
+            //console.log('----------->[child_added] addIceCandidate(new RTCIceCandidate(' + msg.ice+'))');
+            //console.log(msg.ice);
             pc.addIceCandidate(new RTCIceCandidate(msg.ice));
-            console.log('----------->[child_added] addIceCandidate(new RTCIceCandidate(' + msg.ice+')) .. end');
+            //console.log('----------->[child_added] addIceCandidate(new RTCIceCandidate(' + msg.ice+')) .. end');
         } else if (msg.sdp.type == "offer") {
-            console.log('----------->[child_added][offer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type);
+            //console.log('----------->[child_added][offer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type);
             pc.setRemoteDescription(new RTCSessionDescription(msg.sdp))
             .then( () => pc.createAnswer() )
             .then( answer => pc.setLocalDescription(answer))
             .then( () => sendMessage());
-            console.log('----------->[child_added][offer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type + ' .. end');
+            //console.log('----------->[child_added][offer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type + ' .. end');
         } else if (msg.sdp.type == "answer") {
-            console.log('----------->[child_added][answer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type);
+            //console.log('----------->[child_added][answer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type);
             pc.setRemoteDescription(new RTCSessionDescription(msg.sdp));
-            console.log('----------->[child_added][answer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type + ' .. end');
+            //console.log('----------->[child_added][answer] setRemoteDescription(new RTCSessionDescription(..)) ' + msg.sdp.type + ' .. end');
         }else{
-            console.log('----------->[child_added][answer] unknown case');
+            //console.log('----------->[child_added][answer] unknown case');
         }
     }
-    console.log('##[database][child_added] : ' + yourId + "/" + data.val().sender + " .. end");
+    //console.log('##[database][child_added] : ' + yourId + "/" + data.val().sender + " .. end");
 });
-database.on('value', function(data){
-    console.log('##[database][value] : ' + data);
-    console.log(data);
-});
-database.on('child_removed', function(old){
-    console.log('##[database][child_removed] : ' + old);
-    console.log(old);
-});
-database.on('child_changed', function(child, pre){
-    console.log('##[database][child_changed] : ' + child + "/" + pre);
-    console.log(child);
-    console.log(pre);
-});
-database.on('child_moved', function(child, pre){
-    console.log('##[database][child_changed] : ' + child + "/" + pre);
-    console.log(child);
-    console.log(pre);
-})
-console.log('[init]firebase.database().ref() ' + database.key + "/" + database.root);
+//database.on('value', function(data){
+//    console.log('##[database][value] : ' + data);
+//    console.log(data);
+//});
+//database.on('child_removed', function(old){
+//    console.log('##[database][child_removed] : ' + old);
+//    console.log(old);
+//});
+//database.on('child_changed', function(child, pre){
+//    console.log('##[database][child_changed] : ' + child + "/" + pre);
+//    console.log(child);
+//    console.log(pre);
+//});
+//database.on('child_moved', function(child, pre){
+//    console.log('##[database][child_changed] : ' + child + "/" + pre);
+//    console.log(child);
+//    console.log(pre);
+//})
+//console.log('[init]firebase.database().ref() ' + database.key + "/" + database.root);
 
 
 
@@ -114,69 +114,70 @@ var servers = {'iceServers': [{'urls': 'stun:stun.services.mozilla.com'},
 var pc = new RTCPeerConnection(servers);
 // pc의 event handler : onaddstream, ondatachannel, onicecandidate, oniceconnectionstatechange, onidentityresult, onidpassertionerror
 pc.onicecandidate = function(event) { 
-    console.log('##[onicecandidate] : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState + "/" + pc.remoteDescription.type);
+//    console.log('##[onicecandidate] : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState + "/" + pc.remoteDescription.type);
     //console.log('##[onicecandidate] : ' + event.candidate.foundation + "/" + event.candidate.sdpMid + "/" + event.candidate.protocol + "/" + event.candidate.ip + "/" + event.candidate.port);
-    console.log(event.candidate);
+    console.log(event);
     if ( event.candidate ) {
-        console.log('    -> push : ' + yourId + "/" + pc.remoteDescription.type);
+//        console.log('    -> push : ' + yourId + "/" + pc.remoteDescription.type);
         var msg = database.push({ sender: yourId, message: JSON.stringify({'ice': event.candidate}) });
-        console.log('    -> remove : ' + msg);
+//        console.log('    -> remove : ' + msg);
         msg.remove();
     }else{
         console.log("Sent All Ice");
     }
 };
 pc.onaddstream = function(event){
-    console.log('##[onaddstream] : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState + "/" + pc.remoteDescription.type);
-    console.log('##[onaddstream] : ' + event.stream.active + "/" + event.stream.id);
+//    console.log('##[onaddstream] : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState + "/" + pc.remoteDescription.type);
+//    console.log('##[onaddstream] : ' + event.stream.active + "/" + event.stream.id);
     remoteVideo.srcObject = event.stream;
 }
-console.log('[init]peerconnection : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState);
+//console.log('[init]peerconnection : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState);
 
 
 var localVideo = document.getElementById('localVideo');
 var remoteVideo = document.getElementById('remoteVideo');
 localVideo.addEventListener('loadedmetadata', function() {
     console.log('[loadedmetadata]Local video videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px');
+    console.log(pc)
 });
 
 function start() {
-    console.log('[start clicked]Requesting local stream');
-    navigator.mediaDevices.getUserMedia({audio:true, video:true})
-    .then( (stream) => { 
+    //console.log('[start clicked]Requesting local stream');
+    navigator.mediaDevices.getUserMedia({audio:true, video:true}).then( (stream) => { 
             // https://w3c.github.io/mediacapture-main/getusermedia.html 참고.
             // stream은 MediaStream 객체이고 id, active, onaddtrack, onremovetrack 이 있음.
-            console.log('    -> getUserMedia() : '+stream.active + '/'+stream.id);
+            //console.log('    -> getUserMedia() : '+stream.active + '/'+stream.id);
             localVideo.srcObject = stream;
-            console.log("    -> before addStream");
+            //console.log("    -> before addStream");
             pc.addStream(stream); //
-            console.log("    -> after addStream");
+            //console.log("    -> after addStream");
         })
     .catch( (error) => {
         console.log('    -> getUserMedia() error' + error.name);
     });
     startButton.disabled = true;
-    console.log('[start clicked]Requesting local stream .. end');
+    //console.log('[start clicked]Requesting local stream .. end');
 }
 
 function call() {
-    console.log('[call clicked]Starting call');
+    //console.log('[call clicked]Starting call');
     callButton.disabled = true;
     hangupButton.disabled = false;
-    pc.createOffer()
-    .then( (offer) => {
+    pc.createOffer().then( (offer) => {
             //RTCSessionDescription : signaling 정보인듯
-            console.log('    -> createOffer : ' + offer.type ); //offer.sdp 는 너무 길어서 생략.
-            console.log('        -> setLocalDescription : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState);
+            //console.log('    -> createOffer : ' + offer.type ); //offer.sdp 는 너무 길어서 생략.
+            //console.log('        -> setLocalDescription : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState);
             pc.setLocalDescription(offer);
             //  pc.remoteDescription.sdp, pc.localDescription.sdp 는 길어서 생략
-            console.log('        -> setLocalDescription : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState + "/" + pc.remoteDescription.type);
-            console.log('        -> push : ' + yourId + "/" + pc.remoteDescription.type);
+            //console.log('        -> setLocalDescription : ' + pc.signalingState + "/" + pc.iceConnectionState + "/" + pc.iceGatheringState + "/" + pc.remoteDescription.type);
+        }).then( () => {
+            //console.log('        -> push : ' + yourId + "/" + pc.remoteDescription.type);
             var msg = database.push({ sender: yourId, message: JSON.stringify({'sdp': pc.localDescription}) });
-            console.log('        -> remove : ' + msg);
+            //console.log('        -> remove : ' + msg);
             msg.remove();
         });
-    console.log('[call clicked]Starting call .. end');
+      ;
+    //console.log('[call clicked]Starting call .. end');
 }
 function hangup() {
   console.log('Ending call');
@@ -189,9 +190,9 @@ function hangup() {
 }
 
 function sendMessage(){
-    console.log('    -> push : ' + yourId + "/" + pc.remoteDescription.type);
+    //console.log('    -> push : ' + yourId + "/" + pc.remoteDescription.type);
     var msg = database.push({ sender: yourId, message: JSON.stringify({'sdp': pc.localDescription}) });
-    console.log('    -> remove : ' + msg);
+    //console.log('    -> remove : ' + msg);
     msg.remove();
 }
 </script>

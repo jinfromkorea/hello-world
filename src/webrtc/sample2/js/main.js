@@ -37,9 +37,9 @@ var servers = {'iceServers': [{'urls': 'stun:stun.services.mozilla.com'},
 localVideo.addEventListener('loadedmetadata', function() {
     console.log('[loadedmetadata]Local video videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px');
 
-    database4user = firebase.database().ref(roomId+'/users');
-    database4sdp  = firebase.database().ref(roomId+'/sdp');
-    database4ice  = firebase.database().ref(roomId+'/ice');
+    database4user = firebase.database().ref('sample2/'+roomId+'/users');
+    database4sdp  = firebase.database().ref('sample2/'+roomId+'/sdp');
+    database4ice  = firebase.database().ref('sample2/'+roomId+'/ice');
 
     // https://firebase.google.com/docs/reference/js/firebase.database.Reference#once 참고. 
     // https://firebase.google.com/docs/reference/js/firebase.database.Reference#on 참고. 
@@ -77,7 +77,7 @@ window.addEventListener('unload', function(){
 function button_onclick_start() {
     console.log('[1][start] Check Room ' + (new Date()) );
     roomId = document.getElementById('room-id').value;
-    database4room = firebase.database().ref(roomId+'/info'); 
+    database4room = firebase.database().ref('sample2/'+roomId+'/info'); 
     // once()에서 firebase.database.ref(...).set(...) 실행함. 
     database4room.once('value'      , database_rooms_once_value_count); // 2명 이상인지 확인
 }
@@ -97,7 +97,7 @@ function button_onclick_hangup() {
             console.log('[나][hangup] Delete user ');
             dataSnapshot.forEach(function(data){
                 if( yourId == data.val().sender){
-                    firebase.database().ref(roomId+"/users/"+data.key).set(null);
+                    firebase.database().ref('sample2/'+roomId+"/users/"+data.key).set(null);
                     roomId = null;
                 }
             })
