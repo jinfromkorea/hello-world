@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <title>offer with firebase</title>
+</head>
+<body>
+  <div id="btnDiv">
+    <button id="offerBtn">Offer</button>
+  </div>
+  <div id="msgDiv">
+  </div>
+  <script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script>
+// Initialize Firebase
+var config = {
+    apiKey: "AIzaSyDKEYRybMQOAkpMZp2F3bTvQFboa2VJgrI",
+    authDomain: "test-webrtc-56501.firebaseapp.com",
+    databaseURL: "https://test-webrtc-56501.firebaseio.com",
+    projectId: "test-webrtc-56501",
+    storageBucket: "test-webrtc-56501.appspot.com",
+    messagingSenderId: "1044697177062"
+};
+firebase.initializeApp(config);
+
+var pc = new RTCPeerConnection();
+document.getElementById('offerBtn').onclick = function( event ){
+    console.log(event);
+    firebase.database().ref('/test/offer/sdp').set(null);
+    firebase.database().ref('/test/answer/sdp').set(null);
+    navigator.mediaDevices.getUserMedia({audio:true, video:true})
+    .then( stream => { console.log(stream);stream.getTracks().forEach( track => pc.addTrack(track, stream) ); return; })
+    .then( () => {
+        pc.createOffer()
+        .then( offer => pc.setLocalDescription(offer))
+        .then( ()    => firebase.database().ref('/test/offer/sdp').set( JSON.stringify({'sdp':pc.localDescription}) ) );
+    })
+
+    firebase.database().ref('/test/answer').on('child_added', _monitor);
+}
+
+function _monitor(childSnapshot, prevChildKey){ 
+    firebase.database().ref('/test/answer/sdp').once('value', function(snapshot){ 
+        console.log( JSON.parse(snapshot.val()).sdp );
+        pc.setRemoteDescription( new RTCSessionDescription( JSON.parse(snapshot.val()).sdp ) );
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = 'offer가 완료되었습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+        firebase.database().ref('/test/answer').off('child_added', _monitor);
+    });
+};
+
+  </script>
+</body>
+</html>

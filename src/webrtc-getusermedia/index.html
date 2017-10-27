@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <title>getUserMedia</title>
+</head>
+<body>
+    <div id="btnDiv">
+      <button id="startButton">Start</button>
+      <button id="changeSize" disabled>Full</button>
+    </div>
+    <video id="video" autoplay muted playsinline></video>
+    <div id="msgDiv">
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script>
+var cameraCnt = 0, micCnt = 0; isFront=true;
+var constraints = {audio:true, video:true};
+
+// iPhone iOS의 버전이 11이상이어야 webrtc 사용가능. 그래서 navigator.mediaDevices 가 없을수 있음. 
+console.log("navigator.mediaDevices 가 있는지 체크함.")
+if( navigator.mediaDevices == undefined ) {
+    var new_EL = document.createElement("p");
+    new_EL.innerHTML = 'navigator.mediaDevices 가 없음.';
+    document.getElementById('msgDiv').appendChild(new_EL);
+
+    document.getElementById('startButton').disabled = true;
+}
+console.log("2개 이상의 카메라가 있는지 체크함.")
+navigator.mediaDevices.enumerateDevices()
+.then( _deviceInfos => { 
+    console.log(_deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
+    _deviceInfos.forEach( _deviceInfo => { 
+        console.log(_deviceInfo);
+        if(_deviceInfo.kind=='videoinput'){cameraCnt++}
+        else if(_deviceInfo.kind=='audioinput'){micCnt++} 
+    }); 
+}).catch( error => console.log(error) 
+).then( () => { 
+    console.log(cameraCnt);
+    if( cameraCnt>1 ){
+        var new_EL = document.createElement("button");
+        new_EL.setAttribute('id', 'camera');
+        new_EL.innerHTML = '카메라전환';
+        new_EL.onclick = _changeCamera;
+        document.getElementById('btnDiv').appendChild(new_EL);
+    }
+});
+
+document.getElementById('startButton').onclick = _getUserMedia;
+document.getElementById('changeSize').onclick = _changeSize;
+document.getElementById('video').addEventListener('loadedmetadata', _showSize );
+
+function _changeSize(event) {
+    console.log(event);
+    document.getElementById('video').style.width='100%';
+    this.disabled = true;
+}
+function _showSize(event) {
+    console.log(event);
+    var new_EL = document.createElement("p");
+    new_EL.innerHTML = 'videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px';
+    document.getElementById('msgDiv').appendChild(new_EL);
+}
+function _changeCamera(event){
+    console.log(event);
+    var new_EL = document.createElement("p");
+    new_EL.innerHTML = '카메라 전환 ' + ( isFront? "user" : "environment" ) + ' -> ' + ( !isFront? "user" : "environment");
+    document.getElementById('msgDiv').appendChild(new_EL);
+
+    isFront = !isFront;
+    constraints = { audio:true, video:{facingMode : isFront?"user":"environment"} };
+    _getUserMedia();
+}
+function _getUserMedia(event) {
+    console.log(event);
+    console.log("start 버튼이 클릭되었음. ")
+
+    // https://w3c.github.io/mediacapture-main/getusermedia.html 참고.
+    navigator.mediaDevices.getUserMedia(constraints).then(_handleStream).catch(_handleError);
+    this.disabled = true;
+    document.getElementById('changeSize').disabled = false;
+
+    /*
+    // _stream은 MediaStream 객체이고 id, active, onaddtrack, onremovetrack 이 있음.
+    navigator.mediaDevices.getUserMedia(constraints)
+    .then( _stream => document.getElementById('video').srcObject = _stream)
+    .catch( _error => console.log('    -> getUserMedia() error' + _error.name));
+    */
+}
+function _handleStream(stream){
+    console.log(stream);
+    document.getElementById('video').srcObject = stream;
+}
+function _handleError(error){
+    console.log(error);
+    var new_EL = document.createElement("p");
+    new_EL.innerHTML = error.name;
+    document.getElementById('msgDiv').appendChild(new_EL);
+}
+</script>
+</body>
+</html>

@@ -14,13 +14,8 @@
   <link rel="icon" sizes="192x192" href="./images/webrtc-icon-192x192.png">
   <link href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" rel="stylesheet" type="text/css">
   <link rel="stylesheet" href="./css/main.css" />
-<!-- When we finish the codelab we'll move CSS and JavaScript to separate files -->
-<!-- CSS will go here -->
-<style>
-</style>
 </head>
 <body>
-<!-- HTML will go here -->
     <video id="localVideo" autoplay muted></video>
     <video id="remoteVideo" autoplay></video>
     <div>
@@ -28,7 +23,6 @@
       <button id="callButton">Call</button>
       <button id="hangupButton">Hang Up</button>
     </div>
-<!-- JavaScript will go here -->
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <script src="https://www.gstatic.com/firebasejs/4.3.0/firebase.js"></script>
 <script>
@@ -47,7 +41,7 @@ var config = {
 firebase.initializeApp(config);
 console.log('[init]firebase.initializeApp()');
 
-var database = firebase.database().ref('/solutionpot');
+var database = firebase.database().ref('/sample1');
 // https://firebase.google.com/docs/reference/js/firebase.database.Query 참고
 // on method에는 5가지 event가 사용 가능함. value, child_added, child_removed, child_changed, child_moved     
 database.on('child_added', function(data, pre){

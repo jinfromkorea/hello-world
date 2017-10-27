@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="WebRTC code samples">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta itemprop="description" content="Client-side WebRTC code samples">
+  <meta itemprop="image" content="./images/webrtc-icon-192x192.png">
+  <meta itemprop="name" content="WebRTC code samples">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta id="theme-color" name="theme-color" content="#ffffff">
+  <base target="_blank">
+  <title>YUJIN 1:1 Peer connection</title>
+  <link rel="icon" sizes="192x192" href="./images/webrtc-icon-192x192.png">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+  <link rel="stylesheet" href="./css/main.css" />
+  <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Roboto:300,400,500,700" type="text/css">
+</head>
+<body>
+  <div id="login_page" class="hidden">
+    <div class="imgcontainer">
+      <img src="https://www.w3schools.com/howto/img_avatar2.png" alt="Avatar" class="avatar">
+    </div>
+    <div class="container">
+      <label><b>이메일</b></label>
+      <input type="email" id="email" placeholder="이메일을 입력하세요" required>
+      <label><b>패스워드</b></label>
+      <input type="password" id="password" placeholder="패스워드를 입력하세요" required>
+      <button id="signin"><span class="fa fa-sign-in"> 로그인</span></button>
+    </div>
+    <div class="container">
+      <span class="psw"><a>패스워드 분실</a> | <a>가입</a></span>
+    </div>
+  </div>
+  <div id="signup_page" class="hidden">
+    <div class="container">
+      <label><b>이메일</b></label>
+      <input type="email" id="signup_email" placeholder="이메일을 입력하세요" required>
+      <label><b>패스워드</b></label>
+      <input type="password" id="singup_password" placeholder="패스워드를 입력하세요" required>
+      <label><b>패스워드 한번 더</b></label>
+      <input type="password" id="singup_password_repeat" placeholder="패스워드를 한번 더 입력하세요" required>
+      <div>
+        <button id="signup"><span class="fa fa-check"> SignUp</span></button>
+        <button id="cancel_signup"><span class="fa fa-close"> 취소</span></button>&nbsp;
+      </div>
+    </div>
+  </div>
+  <div id="room_page" class="hidden">
+    <header class="container">
+      <button id="signout"><span class="fa fa-sign-out"> SingOut</span></button>
+      <div id="logon_email">not yet</div>
+    </header>
+    <div class="container">
+      <div class="imgcontainer">
+        <img src="https://www.w3schools.com/howto/img_avatar2.png" alt="Avatar" class="avatar">
+      </div>
+    </div>
+    <div class="container">
+      <label><b>방번호</b></label>
+      <input type="text" id="room-id" placeholder="방번호를 입력하세요" required>
+      <button id="startButton"><span class="fa fa-users"> 입장<span></button>
+    </div>
+    <div class="container">
+      방번호는 문자,숫자,언더바(_),하이픈(-) 만 가능해요.<br>
+      윈도우/맥PC는 크롬 또는 Firefox브라우저를 사용해 주세요. <br>
+      안드로이드 계열 스마트기기 사용자는 크롬브라우저를 사용해주세요.<br>
+      아이폰은 iOS 11에서 사파리 브라우저를 사용해주세요. <br>
+    </div>
+  </div>
+  <div id="video_page" class="hidden">
+    <header class="container">
+      <button id="hangupButton"><span class="fa fa-sign-out"> 나가기</span></button>
+      <div id="roomInfo">
+        <label>방 : </label><span>not yet</span>
+      </div>
+    </header>
+    <div id='media' style="position:relative;">
+      <div id="remoteDiv">
+        <video id="remoteVideo" autoplay playsinline></video>
+      </div>
+      <div id="localDiv">
+        <video id="localVideo" autoplay muted playsinline></video>
+      </div>
+      <div id="btnMediaDiv" style="position:absolute;">
+        <button id="cameraButton" class="hidden"><i id="camera_front" class="material-icons hidden">camera_front</i><i id="camera_rear" class="material-icons">camera_rear</i></button><!-- camera_front/camera_rear -->
+        <button id="micButton" class="hidden"><i id="mic" class="material-icons hidden">mic</i><i id="mic_off" class="material-icons">mic_off</i></button>
+        <button id="videoButton" class="hidden"><i id="videocam" class="material-icons hidden">videocam</i><i id="videocam_off" class="material-icons">videocam_off</i></button>
+        <button id="textButton" class="hidden"><i id="perm_phone_msg" class="material-icons">chat</i></button>
+      </div>
+    </div>
+    <div id='data' style="position:relative;" class="hidden">
+      <div id="messageBox"><p>not yet</p></div>
+      <div>
+        <button id="sendButton">Send</button>
+        <textarea id="msg" placeholder="Enter some text, then press Send."></textarea>
+      </div>
+      <div id="btnDataDiv" style="position:absolute;">
+        <button id="mediaButton"><i class="material-icons">voice_chat</i></button>
+        <button id="deleteButton"><i class="material-icons">delete</i></button>
+      </div>
+    </div>
+  </div>
+  <div id="msg_page" class="hidden">
+    <div>
+      <button id="inviteButton"><i class="material-icons">call</i></button><!-- call/call_end -->
+      <button id="fileButton"><i class="material-icons">attach_file</i></button>
+      <button><i class="material-icons">perm_phone_msg</i></button>
+      <button><i class="material-icons">mic</i></button>
+      <button><i class="material-icons">mic_off</i></button>
+      <button><i class="material-icons">videocam</i></button>
+      <button><i class="material-icons">videocam_off</i></button>
+      <button><i class="material-icons">screen_share</i></button>
+      <button><i class="material-icons">stop_screen_share</i></button>
+      <button><i class="material-icons">volume_off</i></button>
+      <button><i class="material-icons">volume_up</i></button>
+      <button><i class="material-icons">volume_down</i></button>
+    </div>
+  </div>
+<!-- https://www.html5rocks.com/en/tutorials/webrtc/basics/ 참고 
+'adapter.js' is a JavaScript shim for WebRTC, maintained by Google with help from the WebRTC community, that abstracts vendor prefixes, browser differences and spec changes
+'adapter.js'는 브라우저의 차이. spec의 변화를 추상화하였다. 
+-->
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+  <script src="./js/main.js"></script>
+</body>
+</html>
