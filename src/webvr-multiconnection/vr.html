@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <base target="_blank">
+  <title>YUJIN WebVR</title>
+  <link rel="icon" sizes="192x192" href="./images/webrtc-icon-192x192.png">
+  <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+  <!-- aframe.js 밑에다 environment component 를 추가해야함. --> 
+</head>
+<body>
+  <a-scene stats id="scene">
+    <a-assets>
+      <video id="localStream" autoplay></video>
+      <video id="remote1Stream" autoplay playsinline></video>
+      <video id="remote2Stream" autoplay playsinline></video>
+    </a-assets>
+    <a-plane position="-5 1.5 -3" scale="1 1 1" rotation="0 -90 0" width="8"  height="3" color="#7B0000" side="double"></a-plane>
+    <a-plane position="5 1.5 -3"  scale="1 1 1" rotation="0 -90 0" width="8"  height="3" color="#0000A4" side="double"></a-plane>
+    <a-plane position="0 0 -3"    scale="1 1 1" rotation="-90 0 0" width="10" height="8" color="#443300" side="double"></a-plane>
+    <a-plane position="0 1.5 -7"  scale="1 1 1" rotation="0 0 0"   width="10" height="3" color="#216320" side="double"></a-plane>
+    <a-plane id="camera1" position="-3.1 1.5 -6.99" width="3" height="2" color="#000000">
+      <a-text  position="0 -0.9 0.05" value="camera1" align="center" baseline="bottom" color="#ff0000"></a-text>
+    </a-plane>
+    <a-plane id="camera2" position="0 1.5 -6.99" width="3" height="2" color="#000000">
+      <a-text  position="0 -0.9 0.05" value="camera2" align="center" baseline="bottom" color="#ff0000"></a-text>
+    </a-plane>
+    <a-plane id="camera3" position="3.1 1.5 -6.99" width="3" height="2" color="#000000">
+      <a-text  position="0 -0.9 0.05" value="camera3" align="center" baseline="bottom" color="#ff0000"></a-text>
+    </a-plane>
+    <a-camera>
+      <a-cursor></a-cursor>
+    </a-camera>
+  </a-scene>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
+  <script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+  <script>
+var remote1Source = (function(global){
+  var streamid, title='camera1', videoElement=null, connection=null;
+  function start(opts){
+    streamid     = opts.streamid;
+    videoElement = opts.videoElement;
+    connection   = opts.connection;
+    connection.videosContainer.appendChild(videoElement);
+    showRemotePreview(opts.callback, opts.stream);
+  }
+  function showRemotePreview(_callback, _stream){
+    videoElement.srcObject = _stream;
+    videoElement.play();
+    _callback(_stream);
+  }
+  return {streamid:streamid, title:title, start:start}
+})(this);
+
+var remote2Source = (function(global){
+  var streamid, title='camera2', videoElement=null, connection=null;
+  function start(opts){
+    streamid     = opts.streamid;
+    videoElement = opts.videoElement;
+    connection   = opts.connection;
+    showRemotePreview(opts.callback, opts.stream);
+  }
+  function showRemotePreview(_callback, _stream){
+    videoElement.srcObject = _stream;
+    videoElement.play();
+    _callback(_stream);
+  }
+  return {streamid:streamid, title:title, start:start}
+})(this);
+
+var camera1 = new RTCMultiConnection();
+camera1.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+camera1.session = { audio: true, video: true, oneway: true };
+camera1.sdpConstraints.mandatory = { OfferToReceiveAudio: true, OfferToReceiveVideo: true };
+
+var camera2 = new RTCMultiConnection();
+camera2.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+camera2.session = { audio: true, video: true, oneway: true };
+camera2.sdpConstraints.mandatory = { OfferToReceiveAudio: true, OfferToReceiveVideo: true };
+
+camera1.onstream = function(event) {
+    console.log("RTCMultiConnection event : onstream");
+    console.log(event);
+    event.mediaElement.removeAttribute('src');
+    event.mediaElement.removeAttribute('srcObject');
+    console.log(event.mediaElement);
+
+    var video = document.querySelector('#remote1Stream');
+    remote1Source.start({
+        videoElement : video, 
+        stream       : event.stream, 
+        streamid     : event.streamid,
+        connection   : camera1,
+        callback:function(){
+            var scene = document.querySelector('#camera1');
+            var aobj = document.createElement('a-video');
+            aobj.setAttribute('id', 'pc1');
+            aobj.setAttribute('src', '#remote1Stream' );
+            aobj.setAttribute('position', '0 0 0.01');
+            aobj.setAttribute('rotation', '0 0 0');
+            aobj.setAttribute('scale', '2.7 1.7 0.1');
+            aobj.setAttribute('playsinline', 'true');
+            scene.appendChild(aobj);
+        }
+    });
+};
+camera2.onstream = function(event) {
+    console.log("RTCMultiConnection event : onstream");
+    console.log(event);
+    event.mediaElement.removeAttribute('src');
+    event.mediaElement.removeAttribute('srcObject');
+    console.log(event.mediaElement);
+
+    var video = document.querySelector('#remote2Stream');
+    remote1Source.start({
+        videoElement : video, 
+        stream       : event.stream, 
+        streamid     : event.streamid,
+        connection   : camera1,
+        callback:function(){
+            var scene = document.querySelector('#camera2');
+            var aobj = document.createElement('a-video');
+            aobj.setAttribute('id', 'pc2');
+            aobj.setAttribute('src', '#remote2Stream' );
+            aobj.setAttribute('position', '0 0 0.01');
+            aobj.setAttribute('rotation', '0 0 0');
+            aobj.setAttribute('scale', '2.7 1.7 0.1');
+            aobj.setAttribute('playsinline', 'true');
+            scene.appendChild(aobj);
+        }
+    });
+};
+camera1.onstreamended = function(event) {
+    console.log("RTCMultiConnection event : onstreamended");
+    console.log(event);
+};
+camera2.onstreamended = function(event) {
+    console.log("RTCMultiConnection event : onstreamended");
+    console.log(event);
+};
+  </script>
+  <script>
+function onReady() {
+  camera1.join('camera1');
+  camera2.join('camera2');
+}
+document.addEventListener('DOMContentLoaded', onReady);
+  </script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <title>Camera1</title>
+</head>
+<body>
+  <button id="open-room">Start 'camera1' Broadcast</button>
+  <div id="videos-container"></div>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
+  <script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+  <script>
+var connection = new RTCMultiConnection();
+connection.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+connection.session = { audio: true, video: true, oneway: true };
+connection.sdpConstraints.mandatory = { OfferToReceiveAudio: false, OfferToReceiveVideo: false };
+connection.videosContainer = document.getElementById('videos-container');
+connection.onstream = function(event) {
+    console.log("RTCMultiConnection event : onstream");
+    console.log(event);
+    event.mediaElement.removeAttribute('src');
+    event.mediaElement.removeAttribute('srcObject');
+    var video = document.createElement('video');
+    video.muted = true;
+    video.playsinline = true;
+    video.autoplay = true;
+    video.srcObject = event.stream;
+    video.id = event.streamid;
+    connection.videosContainer.appendChild(video);
+    video.play();
+};
+
+connection.onstreamended = function(event) {
+    console.log("RTCMultiConnection event : onstreamended");
+    console.log(event);
+    var mediaElement = document.getElementById(event.streamid);
+    if (mediaElement) {
+        mediaElement.parentNode.removeChild(mediaElement);
+    }
+};
+localStorage.setItem(connection.socketMessageEvent, 'camera1');
+
+document.getElementById('open-room').onclick = _openRoom;
+function _openRoom(event) {
+    console.log(this);
+    console.log(event);
+    connection.open('camera1', function() {
+        console.log(connection.sessionid);
+    });
+}
+  </script>
+</body>
+</html>
