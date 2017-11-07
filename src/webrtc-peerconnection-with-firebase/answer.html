@@ -48,7 +48,7 @@ function _readSdp(dataSnapshot){
         firebase.database().ref('/test/offer').on('child_added', _monitor);
     }else{
         pc = new RTCPeerConnection(servers);
-        pc.ontrack = _handleOnTrack;
+        //pc.ontrack = _handleOnTrack;
         pc.onaddstream = _handleAddStream;
         pc.oniceconnectionstatechange = _handleIceConnectionState;
         dataSnapshot.forEach( data => _createAnswer(data, pc) );
@@ -56,7 +56,6 @@ function _readSdp(dataSnapshot){
 }
 function _handleOnTrack(event){ 
     console.log('pc', event);
-    pc.onaddstream = null;
     document.getElementById('remoteVideo').srcObject = event.streams[0];
     document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
 }
