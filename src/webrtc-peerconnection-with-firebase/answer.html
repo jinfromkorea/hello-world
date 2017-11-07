@@ -56,14 +56,17 @@ function _readSdp(dataSnapshot){
 }
 function _handleOnTrack(event){ 
     console.log('pc', event);
+    console.log(event.streams[0]);
     document.getElementById('remoteVideo').srcObject = event.streams[0];
+    document.getElementById('remoteVideo').playsinline = true;
     document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
 }
 function _handleAddStream(event){
     console.log('pc', event, event.stream);
     if( document.getElementById('remoteVideo').srcObject ){
-        console.log(document.getElementById('remoteVideo').srcObject);
+        console.log('ontrack 에서 처리함.');
     }else{
+        console.log('ontrack 이 불리지 않음.');
         document.getElementById('remoteVideo').srcObject = event.stream;
         document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
     }
