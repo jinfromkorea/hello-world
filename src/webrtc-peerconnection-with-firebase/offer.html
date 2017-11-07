@@ -95,16 +95,17 @@ function _handleIceConnectionState(event){
 }
 function _handleOffer(offer, pc){
     console.log(offer, pc);
-    pc.setLocalDescription(offer);
-    console.log(offer, pc.localDescription);
-    firebase.database().ref('/test/offer').push( {
-        url      :window.location.href, 
-        platform :navigator.platform, 
-        userAgent:navigator.userAgent, 
-        date     :new Date().toString(),
-        sdp      :JSON.stringify(pc.localDescription) 
+    pc.setLocalDescription(offer).then( () => {
+        console.log(offer, pc.localDescription);
+        firebase.database().ref('/test/offer').push( {
+            url      :window.location.href, 
+            platform :navigator.platform, 
+            userAgent:navigator.userAgent, 
+            date     :new Date().toString(),
+            sdp      :JSON.stringify(pc.localDescription) 
+        });
+        firebase.database().ref('/test/answer').on('child_added', _monitor);
     });
-    firebase.database().ref('/test/answer').on('child_added', _monitor);
 }
 function _monitor(childSnapshot, prevChildKey){ 
     console.log('firebase', childSnapshot.val());
