@@ -11,8 +11,8 @@
   <button id="join-room1">Get 'Screan1'</button>
   <button id="join-room2">Get 'Screan2'</button>
   <div id="screen-container">
-    <video id="screen1"></video>
-    <video id="screen2"></video>
+    <video id="screen1" autoplay playsinline></video>
+    <video id="screen2" autoplay playsinline></video>
   </div>
   <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
   <script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
@@ -24,7 +24,7 @@
  * 두번째는 forceOptions임. useDefaultDevices, autoOpenOrJoin
  */    
 var videoPreview = document.getElementById('screen1');
-var broadcastId = 'Screen1';
+var broadcastId = 'iMac';
 var connection = new RTCMultiConnection( null, {useDefaultDevices: true});
 connection.enableScalableBroadcast = true;
 connection.maxRelayLimitPerUser = 1;

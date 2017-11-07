@@ -9,9 +9,9 @@
 </head>
 <body>
   <button id="open-room">Start 'Screan1' Broadcast</button>
-  <div id="screen-container"></div>
+  <div id="screen-container"><video id="local" autoplay muted playsinline></video></div>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-  <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
+  <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
   <script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
   <script src="https://cdn.webrtc-experiment.com:443/getScreenId.js"></script>
   <script>
@@ -21,14 +21,14 @@
  *          connection.channel = connection.sessionid = roomid
  * 두번째는 forceOptions임. useDefaultDevices, autoOpenOrJoin
  */    
-var videoPreview = document.getElementById('video-preview');
-var broadcastId = 'Screen1';
+var videoPreview = document.getElementById('local');
+var broadcastId = 'iMac';
 var connection = new RTCMultiConnection( null, {useDefaultDevices: true});
 connection.enableScalableBroadcast = true;
 connection.maxRelayLimitPerUser = 1;
 connection.autoCloseEntireSession = true;
 connection.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
-connection.socketMessageEvent = 'scalable-screen-broadcast-demo-poscoict';
+connection.socketMessageEvent = 'scalable-screen-broadcast-demo';
 connection.session = { screen: true, oneway: true };
 connection.sdpConstraints.mandatory = { OfferToReceiveVideo: false, OfferToReceiveAudio: false };
 connection.videosContainer = document.getElementById('screen-container');
@@ -132,17 +132,20 @@ connection.onstream = function(event){
     console.log('[s1]', 'onstream', event);
     console.log('[s1]', 'onstream', connection.isInitiator, event.type, event.mediaElement);
     console.log('[s1]', 'onstream', event.stream);
-    console.log('[s1]', 'onstreamended', connection.attachStreams.length);
+    console.log('[s1]', 'onstream', connection.attachStreams.length);
     connection.attachStreams.forEach( stream => console.log('[s1]', 'onstream', event.stream));
+
     if(connection.isInitiator && event.type !== 'local') {
         console.log('[s1]', 'onstream', connection.isInitiator, event.type);
         return;
     }
+
     if(event.mediaElement) {
         event.mediaElement.pause();
         delete event.mediaElement;
     }
     connection.isUpperUserLeft = false;
+    videoPreview.srcObject = event.stream;
 };
 connection.onstreamended = function(event){ 
     console.log('[s1]', 'onstreamended', event); 
@@ -173,6 +176,10 @@ document.getElementById('open-room').onclick = function(event){
         console.log('[s1]', 'check-broadcast-presence', broadcastId, isBroadcastExists, connection.userid);
         if(isBroadcastExists) {
             alert('스크린을 제공할 수 없습니다.');
+
+            connection.userid = broadcastId;
+            console.log('[s1]', 'join-broadcast');
+            connection.getSocket().emit('join-broadcast', { broadcastId:broadcastId, userid:connection.userid, typeOfStreams:connection.session });
         }else{
             connection.userid = broadcastId;
             console.log('[s1]', 'join-broadcast');
