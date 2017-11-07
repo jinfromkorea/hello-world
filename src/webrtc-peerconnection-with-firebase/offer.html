@@ -12,7 +12,7 @@
   <div id="btnDiv">
     <button id="offerBtn" disabled>Offer</button>
   </div>
-  <video id="localVideo" autoplay mute playsinline></video>
+  <video id="localVideo" autoplay muted playsinline></video>
   <div id="msgDiv">
   </div>
   <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
@@ -96,6 +96,7 @@ function _handleIceConnectionState(event){
 function _handleOffer(offer, pc){
     console.log(offer, pc);
     pc.setLocalDescription(offer);
+    console.log(offer, pc.localDescription);
     firebase.database().ref('/test/offer').push( {
         url      :window.location.href, 
         platform :navigator.platform, 
