@@ -96,7 +96,6 @@ function _handleIceConnectionState(event){
 function _handleOffer(offer, pc){
     console.log(offer, pc);
     pc.setLocalDescription(offer).then( () => {
-        console.log(offer, pc.localDescription);
         firebase.database().ref('/test/offer').push( {
             url      :window.location.href, 
             platform :navigator.platform, 
