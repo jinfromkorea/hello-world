@@ -45,23 +45,28 @@ navigator.mediaDevices.enumerateDevices()
         new_EL.innerHTML = '카메라전환';
         new_EL.onclick = _changeCamera;
         document.getElementById('btnDiv').appendChild(new_EL);
+    }else{
+        var new_EL = document.createElement("button");
+        new_EL.setAttribute('id', 'changeSize');
+        new_EL.innerHTML = 'Full';
+        new_EL.onclick = _changeSize;
+        document.getElementById('btnDiv').appendChild(new_EL);
     }
 });
 
 document.getElementById('startButton').onclick = _getUserMedia;
-document.getElementById('changeSize').onclick = _changeSize;
 document.getElementById('video').addEventListener('loadedmetadata', _showSize );
 
-function _changeSize(event) {
-    console.log(event);
-    document.getElementById('video').style.width='100%';
-    this.disabled = true;
-}
 function _showSize(event) {
     console.log(event);
     var new_EL = document.createElement("p");
     new_EL.innerHTML = 'videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px';
     document.getElementById('msgDiv').appendChild(new_EL);
+}
+function _changeSize(event) {
+    console.log(event);
+    document.getElementById('video').style.width='100%';
+    this.disabled = true;
 }
 function _changeCamera(event){
     console.log(event);
