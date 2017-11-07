@@ -15,7 +15,6 @@
   <div id="msgDiv">
   </div>
   <script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
-  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
   <script>
 // Initialize Firebase
 var config = {
@@ -29,7 +28,8 @@ var config = {
 firebase.initializeApp(config);
 
 var pc = new RTCPeerConnection();
-pc.ontrack = function(e){ 
+pc.ontrack = function(event){ 
+    console.log(event);
     document.getElementById('remoteVideo').srcObject = e.streams[0];
 };
 document.getElementById('answerBtn').onclick = _answer;
