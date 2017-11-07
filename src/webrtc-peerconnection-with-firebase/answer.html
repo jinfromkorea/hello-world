@@ -30,7 +30,7 @@ firebase.initializeApp(config);
 var pc = new RTCPeerConnection();
 pc.ontrack = function(event){ 
     console.log(event);
-    document.getElementById('remoteVideo').srcObject = e.streams[0];
+    document.getElementById('remoteVideo').srcObject = event.streams[0];
 };
 document.getElementById('answerBtn').onclick = _answer;
 
