@@ -9,7 +9,7 @@
 </head>
 <body>
   <div id="btnDiv">
-    <button id="answerBtn">Answer</button>
+    <button id="answerBtn" disabled>Answer</button>
   </div>
   <video id="remoteVideo" autoplay playsinline></video>
   <div id="msgDiv">
@@ -27,29 +27,91 @@ var config = {
 };
 firebase.initializeApp(config);
 
-var pc = new RTCPeerConnection();
-pc.ontrack = function(event){ 
+var pc;
+var servers = {'iceServers': [{'urls': 'stun:stun.services.mozilla.com'}, 
+                              {'urls': 'stun:stun.l.google.com:19302'}, 
+                              {'urls': 'turn:numb.viagenie.ca','credential': 'yujin','username': 'yujin@email.com'}]};
+// Event
+document.addEventListener('DOMContentLoaded', _checkFirebase);
+function _checkFirebase(event){
     console.log(event);
+    firebase.database().ref('/test/offer').once('value', _readSdp);
+    document.getElementById('answerBtn').onclick = _handleDOMEvent;
+}
+function _readSdp(dataSnapshot){
+    console.log('firebase', dataSnapshot.val());
+    document.getElementById('answerBtn').disabled = false;
+    var cnt = 0;
+    //dataSnapshot.forEach( data => console.log(data.key, data.val()) );
+    dataSnapshot.forEach( data => cnt++ ); //console.log(data.val(), data.key)
+    if ( cnt < 1 ){
+        firebase.database().ref('/test/offer').on('child_added', _monitor);
+    }else{
+        pc = new RTCPeerConnection(servers);
+        pc.ontrack = _handleOnTrack;
+        pc.onaddstream = _handleAddStream;
+        pc.oniceconnectionstatechange = _handleIceConnectionState;
+        dataSnapshot.forEach( data => _createAnswer(data, pc) );
+    }
+}
+function _handleOnTrack(event){ 
+    console.log('pc', event);
     document.getElementById('remoteVideo').srcObject = event.streams[0];
-};
-document.getElementById('answerBtn').onclick = _answer;
-
-function _answer(event){
-    console.log(event);
-    firebase.database().ref('/test/offer/sdp').once('value', _readSdp);
+    document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
 }
-function _readSdp(snapshot){
-    console.log(JSON.parse(snapshot.val()).sdp);
-    pc.setRemoteDescription( new RTCSessionDescription( JSON.parse(snapshot.val()).sdp ) 
-    ).then( () => pc.createAnswer() 
-    ).then( answer => pc.setLocalDescription( answer ) 
-    ).then( () => firebase.database().ref('/test/answer/sdp').set( JSON.stringify({'sdp':pc.localDescription})) );
+function _handleAddStream(event){
+    console.log('pc', event, event.stream);
+    document.getElementById('remoteVideo').srcObject = event.stream;
+    document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
 }
-firebase.database().ref('/test/offer').on('child_removed', function(childSnapshot, prevChildKey){ 
+function _handleIceConnectionState(event){
+    console.log('pc', pc.iceConnectionState, event);
+    if(pc.iceConnectionState === 'connected'){
+        document.getElementById('answerBtn').disabled = true;
+        firebase.database().ref('/test/offer').off('child_added', _monitor);
+    }else if(pc.iceConnectionState === 'disconnected'){
+        document.getElementById('answerBtn').disabled = true;
+        firebase.database().ref('/test/offer').set(null);
+        firebase.database().ref('/test/answer').set(null);
+        pc.close();
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = '연결이 끊어졌습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+        firebase.database().ref('/test/offer').on('child_added', _monitor);
+    }
+}
+function _handleDOMEvent(event){
+    console.log(event.target.id, event);
+    if( event.target.id === 'remoteVideo'){
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = 'videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }else if( event.target.id === 'answerBtn'){
+        firebase.database().ref('/test/offer').once('value', _readSdp);
+    }
+}
+function _createAnswer(data, pc){
+    console.log(data.val(), pc);
+    pc.setRemoteDescription( new RTCSessionDescription(JSON.parse(data.val().sdp) )
+    ).then( () => pc.createAnswer()
+    ).then( answer => pc.setLocalDescription(answer)
+    ).then( () => {
+        firebase.database().ref('/test/answer').push( {
+            url      :window.location.href, 
+            platform :navigator.platform, 
+            userAgent:navigator.userAgent, 
+            date     :new Date().toString(),
+            sdp      :JSON.stringify(pc.localDescription) 
+        });
+    }).catch( error => console.log(error) );  
+}
+function _monitor(childSnapshot, prevChildKey){ 
+    console.log('firebase', childSnapshot.val());
+    document.getElementById('answerBtn').disabled = false;
     var new_EL = document.createElement("p");
-    new_EL.innerHTML = 'offer 정보가 변경되었습니다. answer 버튼을 클릭하세요.';
+    new_EL.innerHTML = 'offer 정보가 갱신되었습니다.';
     document.getElementById('msgDiv').appendChild(new_EL);
-});
+};
   </script>
 </body>
 </html>
