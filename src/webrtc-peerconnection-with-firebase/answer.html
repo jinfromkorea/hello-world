@@ -106,7 +106,7 @@ function _handleIceConnectionState(event){
         pc.close();
     }else if(pc.iceConnectionState === 'closed'){
         pc = null;
-        firebase.database().ref('/test/answer/'+dateKey).remove();
+        firebase.database().ref('/test/answer/'+dataKey).remove();
         firebase.database().ref('/test/offer').on('child_added', _monitorOffer);
         firebase.database().ref('/test/ice').off('child_added', _monitorIce);
     }
