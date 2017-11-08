@@ -69,7 +69,7 @@ function _handleDOMEvent(event){
         document.getElementById('offerBtn').disabled = false;
         document.getElementById('offerBtn').onclick = _handleDOMEvent;
     }else if( event.target.id === 'offerBtn'){
-        firebase.database().ref('/test/offer').set(null);
+        firebase.database().ref('/test/offer').set(null); // offer의 sdp 정보는 최대 1건만 유지되도록함.
         firebase.database().ref('/test/answer').set(null);
         pc = new RTCPeerConnection(servers);
         if(localStream){
@@ -84,7 +84,7 @@ function _handleDOMEvent(event){
     }
 }
 function _handleIceCandidate(event){
-    console.log('pc', event);
+    console.log('pc', event.candidate); //RTCPeerConnectionIceEvent
     if ( event.candidate ) {
         var msg = firebase.database().ref('/test/ice').push({
             sender:'offer', 
@@ -145,8 +145,8 @@ function _monitorAnswer(childSnapshot, prevChildKey){
     firebase.database().ref('/test/answer').off('child_added', _monitorAnswer);
 }
 function _monitorIce(childSnapshot, prevChildKey){ 
-    console.log('firebase', childSnapshot.val());
     if(childSnapshot.val().sender==='answer'){
+        console.log('firebase', childSnapshot.val());
         pc.addIceCandidate( new RTCIceCandidate( JSON.parse(childSnapshot.val().ice) ) );
     }
 }
