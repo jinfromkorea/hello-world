@@ -126,8 +126,10 @@ function _handleIceConnectionState(event){
         document.getElementById('msgDiv').appendChild(new_EL);
     }else if(pc.iceConnectionState === 'closed'){
         pc = null;
-        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+        console.log('delete '+dataKey);
         firebase.database().ref('/test/offer/'+dataKey).remove();
+        dataKey = null;
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
         document.getElementById('offerBtn').disabled = false;
         let new_EL = document.createElement("p");
         new_EL.innerHTML = '[ToDo] Offer 버튼을 클릭하세요.';
