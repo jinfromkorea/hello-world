@@ -45,7 +45,7 @@ function _readSdp(dataSnapshot){
     dataSnapshot.forEach( data => cnt++ ); //console.log(data.val(), data.key)
     if ( cnt > 0 ){
         var new_EL = document.createElement("p");
-        new_EL.innerHTML = 'Offer 버튼을 클릭해서 offer 정보를 갱신하시기 바랍니다.';
+        new_EL.innerHTML = '[ToDo] Offer 버튼을 클릭하세요.';
         document.getElementById('msgDiv').appendChild(new_EL);
     }
 }
@@ -64,7 +64,7 @@ function _handleDOMEvent(event){
     console.log(event.target.id, event);
     if( event.target.id === 'localVideo'){
         var new_EL = document.createElement("p");
-        new_EL.innerHTML = 'videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px';
+        new_EL.innerHTML = '[info] video가 로드되었습니다. (width: ' + this.videoWidth +'px, height: ' + this.videoHeight + 'px)';
         document.getElementById('msgDiv').appendChild(new_EL);
         document.getElementById('offerBtn').disabled = false;
         document.getElementById('offerBtn').onclick = _handleDOMEvent;
@@ -76,20 +76,48 @@ function _handleDOMEvent(event){
             localStream.getTracks().forEach( track => pc.addTrack(track, localStream) );
         }
         pc.oniceconnectionstatechange = _handleIceConnectionState;
+        pc.onicecandidate = _handleIceCandidate; //iPhone이 끼면.. 필요한가?
         pc.createOffer().then( offer => _handleOffer(offer, pc) );
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] 연결 대기중입니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }
+}
+function _handleIceCandidate(event){
+    console.log('pc', event);
+    if ( event.candidate ) {
+        var msg = firebase.database().ref('/test/ice').push({
+            sender:'offer', 
+            ice   :JSON.stringify(event.candidate) 
+        });
+        msg.remove();
+    }else{
+        console.log("Sent All Ice");
     }
 }
 function _handleIceConnectionState(event){
     console.log('pc', pc.iceConnectionState, event);
-    if(pc.iceConnectionState === 'completed'){
+    if(pc.iceConnectionState === 'new'){
+    }else if(pc.iceConnectionState === 'checking'){
+    }else if(pc.iceConnectionState === 'connected'){
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] 연결 되었습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }else if(pc.iceConnectionState === 'completed'){
         document.getElementById('offerBtn').disabled = true;
     }else if(pc.iceConnectionState === 'disconnected'){
         document.getElementById('offerBtn').disabled = false;
         firebase.database().ref('/test/offer').set(null);
         firebase.database().ref('/test/answer').set(null);
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
         pc.close();
+        document.getElementById('msgDiv').innerHTML='';
         var new_EL = document.createElement("p");
-        new_EL.innerHTML = 'Offer 버튼을 클릭해서 offer 정보를 등록하시기 바랍니다.';
+        new_EL.innerHTML = '[info] 연결이 끊어졌습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }else if(pc.iceConnectionState === 'closed'){
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = '[ToDo] Offer 버튼을 클릭하세요.';
         document.getElementById('msgDiv').appendChild(new_EL);
     }
 }
@@ -103,18 +131,25 @@ function _handleOffer(offer, pc){
             date     :new Date().toString(),
             sdp      :JSON.stringify(pc.localDescription) 
         });
-        firebase.database().ref('/test/answer').on('child_added', _monitor);
+        firebase.database().ref('/test/answer').on('child_added', _monitorAnswer);
+        firebase.database().ref('/test/ice').on('child_added', _monitorIce);
     });
 }
-function _monitor(childSnapshot, prevChildKey){ 
+function _monitorAnswer(childSnapshot, prevChildKey){ 
     console.log('firebase', childSnapshot.val());
     pc.setRemoteDescription( new RTCSessionDescription( JSON.parse(childSnapshot.val().sdp) ) );
 
     var new_EL = document.createElement("p");
-    new_EL.innerHTML = 'offer가 완료되었습니다.';
+    new_EL.innerHTML = '[info] 연결중입니다.';
     document.getElementById('msgDiv').appendChild(new_EL);
-    firebase.database().ref('/test/answer').off('child_added', _monitor);
-};
+    firebase.database().ref('/test/answer').off('child_added', _monitorAnswer);
+}
+function _monitorIce(childSnapshot, prevChildKey){ 
+    console.log('firebase', childSnapshot.val());
+    if(childSnapshot.val().sender==='answer'){
+        pc.addIceCandidate( new RTCIceCandidate( JSON.parse(childSnapshot.val().ice) ) );
+    }
+}
   </script>
 </body>
 </html>

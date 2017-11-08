@@ -40,58 +40,83 @@ function _checkFirebase(event){
 }
 function _readSdp(dataSnapshot){
     console.log('firebase', dataSnapshot.val());
-    document.getElementById('answerBtn').disabled = false;
     var cnt = 0;
     //dataSnapshot.forEach( data => console.log(data.key, data.val()) );
     dataSnapshot.forEach( data => cnt++ ); //console.log(data.val(), data.key)
     if ( cnt < 1 ){
-        firebase.database().ref('/test/offer').on('child_added', _monitor);
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] 원격 연결정보가 없습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+        firebase.database().ref('/test/offer').on('child_added', _monitorOffer);
     }else{
         pc = new RTCPeerConnection(servers);
-        pc.ontrack = _handleOnTrack;
-        pc.onaddstream = _handleAddStream;
+        if( navigator.platform === 'iPhone' ){
+            pc.ontrack = _handleOnTrack;
+            pc.onicecandidate = _handleIceCandidate; 
+        }else{
+            pc.onaddstream = _handleAddStream;
+        }
         pc.oniceconnectionstatechange = _handleIceConnectionState;
         dataSnapshot.forEach( data => _createAnswer(data, pc) );
     }
 }
 function _handleOnTrack(event){ 
-    console.log('pc', event);
-    console.log(event.streams[0]);
+    console.log('pc', event, event.streams[0]);
     document.getElementById('remoteVideo').srcObject = event.streams[0];
-    document.getElementById('remoteVideo').playsinline = true;
     document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
 }
 function _handleAddStream(event){
     console.log('pc', event, event.stream);
-    if( document.getElementById('remoteVideo').srcObject ){
-        console.log('ontrack 에서 처리함.');
+    document.getElementById('remoteVideo').srcObject = event.stream;
+    document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
+}
+function _handleIceCandidate(event){
+    console.log('pc', event);
+    if ( event.candidate ) {
+        var msg = firebase.database().ref('/test/ice').push({
+            sender:'answer', 
+            ice   :JSON.stringify(event.candidate) 
+        });
+        msg.remove();
     }else{
-        console.log('ontrack 이 불리지 않음.');
-        document.getElementById('remoteVideo').srcObject = event.stream;
-        document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent );
+        console.log("Sent All Ice");
     }
 }
 function _handleIceConnectionState(event){
     console.log('pc', pc.iceConnectionState, event);
-    if(pc.iceConnectionState === 'connected'){
+    var new_EL = document.createElement("p");
+    if(pc.iceConnectionState === 'checking'){
+        new_EL.innerHTML = '[info] 연결중입니다.';
+    } else if(pc.iceConnectionState === 'connected'){
+        new_EL.innerHTML = '[info] 연결 되었습니다.';
+        firebase.database().ref('/test/offer').off('child_added', _monitorOffer);
         document.getElementById('answerBtn').disabled = true;
-        firebase.database().ref('/test/offer').off('child_added', _monitor);
     }else if(pc.iceConnectionState === 'disconnected'){
-        document.getElementById('answerBtn').disabled = true;
-        firebase.database().ref('/test/offer').set(null);
-        firebase.database().ref('/test/answer').set(null);
+        new_EL.innerHTML = '[info] 연결이 끊어졌습니다.';
         pc.close();
-        var new_EL = document.createElement("p");
-        new_EL.innerHTML = '연결이 끊어졌습니다.';
-        document.getElementById('msgDiv').appendChild(new_EL);
-        firebase.database().ref('/test/offer').on('child_added', _monitor);
+        document.getElementById('remoteVideo').srcObject = null;
+        document.getElementById('msgDiv').innerHTML='';
+        document.getElementById('answerBtn').disabled = true;
+    }else if(pc.iceConnectionState === 'closed'){
+        new_EL.innerHTML = '[info] 원격 연결정보가 없습니다.';
+        firebase.database().ref('/test/answer').set(null);
+        firebase.database().ref('/test/offer').set(null);
+        firebase.database().ref('/test/offer').on('child_added', _monitorOffer);
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+    }else if(pc.iceConnectionState === 'failed'){
+        new_EL.innerHTML = '[info] 연결에 실패했습니다.';
+        firebase.database().ref('/test/answer').set(null);
+        firebase.database().ref('/test/offer').set(null);
+        firebase.database().ref('/test/offer').on('child_added', _monitorOffer);
+        document.getElementById('answerBtn').disabled = true;
     }
+    document.getElementById('msgDiv').appendChild(new_EL);
 }
 function _handleDOMEvent(event){
     console.log(event.target.id, event);
     if( event.target.id === 'remoteVideo'){
         var new_EL = document.createElement("p");
-        new_EL.innerHTML = 'videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px';
+        new_EL.innerHTML = '[info] video가 로드되었습니다. (width: ' + this.videoWidth +'px, height: ' + this.videoHeight + 'px)';
         document.getElementById('msgDiv').appendChild(new_EL);
     }else if( event.target.id === 'answerBtn'){
         firebase.database().ref('/test/offer').once('value', _readSdp);
@@ -110,15 +135,23 @@ function _createAnswer(data, pc){
             date     :new Date().toString(),
             sdp      :JSON.stringify(pc.localDescription) 
         });
+        firebase.database().ref('/test/ice').on('child_added', _monitorIce);
     }).catch( error => console.log(error) );  
 }
-function _monitor(childSnapshot, prevChildKey){ 
+function _monitorOffer(childSnapshot, prevChildKey){ 
     console.log('firebase', childSnapshot.val());
     document.getElementById('answerBtn').disabled = false;
     var new_EL = document.createElement("p");
-    new_EL.innerHTML = 'offer 정보가 갱신되었습니다.';
+    new_EL.innerHTML = '[Todo] Answer 버튼을 클릭하세요.';
     document.getElementById('msgDiv').appendChild(new_EL);
-};
+}
+function _monitorIce(childSnapshot, prevChildKey){ 
+    console.log('firebase', childSnapshot.val());
+    if(childSnapshot.val().sender==='offer'){
+        pc.addIceCandidate( new RTCIceCandidate( JSON.parse(childSnapshot.val().ice) ) );
+    }
+}
+
   </script>
 </body>
 </html>
