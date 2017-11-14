@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <title>getUserMedia</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+<style>
+    video, img {
+      width: 100%    !important;
+      max-width: 100%    !important;
+      height: auto   !important;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: -1000;
+    }
+</style>
+</head>
+<body>
+    <a-scene id="aScene">
+    </a-scene>
+    <video id="environment" autoplay></video>
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script type="text/javascript">
+var cameraSource = (function(global) {
+  var id='source-camera', title='Camera', videoElement=null, constraints={video:{facingMode:"environment"}};
+  function start(opts) {
+    if (opts.constraints) {
+      constraints = opts.constraints;
+    }
+    videoElement = opts.videoElement;
+    showCameraPreview(opts.callback);
+  }
+  function showCameraPreview(_callbcak) {
+    navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+      if (videoElement) {
+        videoElement.srcObject = stream;
+        videoElement.play();
+      }
+      if (_callbcak) {
+        _callbcak(stream);
+      }
+    }, function(err) { console.error(err); });
+  }
+  return { id: id, title: title, start: start };
+})(this);
+    </script>
+    <script type="text/javascript">
+let cameraCnt = 0, micCnt = 0; isFront = true;
+let constraints = {audio:true, video:true};
+function onReady(event){
+    console.log(event);
+    console.log("navigator.mediaDevices 가 있는지 체크함.")
+    if( navigator.mediaDevices == undefined ) {
+        console.log("no devices");
+        return;
+    }
+    console.log("2개 이상의 카메라가 있는지 체크함.")
+    navigator.mediaDevices.enumerateDevices().then( _deviceInfos => { 
+        console.log(_deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
+        _deviceInfos.forEach( _deviceInfo => { 
+            console.log(_deviceInfo);
+            if(_deviceInfo.kind=='videoinput'){cameraCnt++}
+            else if(_deviceInfo.kind=='audioinput'){micCnt++} 
+        }); 
+    }).catch( error => console.log(error) 
+    ).then( () => { 
+        console.log(cameraCnt);
+        if( cameraCnt>1 ){
+            let video = document.querySelector('#environment');
+            cameraSource.start({
+                videoElement: video,
+                constraints: { video:{facingMode:"environment"}},
+                callback: function(_stream) {
+                    var htmlStr = '<a-image id="controls" src="ar-music-ctrls.png" position="0 0 -30" scale="20 25 20"></a-image>';
+                    document.querySelector('#aScene').appendChild(new DOMParser().parseFromString(htmlStr, 'text/html').body.firstChild);
+                }
+            });
+        }else{
+            return;
+        }
+    });
+}
+    </script>
+    <script type="text/javascript">
+document.addEventListener('DOMContentLoaded', onReady);
+    </script>
+</body>
+</html>
