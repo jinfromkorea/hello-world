@@ -10,8 +10,8 @@
 </head>
 <body>
     <div id="btnDiv">
-        <button id="callBtn1" value='iMac' disabled>Get 'Screan1'</button>
-        <button id="callBtn2" value='vdi' disabled>Get 'Screan2'</button>
+        <button id="callBtn1" value='iMac' disabled>Get 'iMac' screen</button>
+        <button id="callBtn2" value='vdi' disabled>Get 'vdi' screen</button>
     </div>
     <div id="screen-container">
         <video id="remoteScreen1" autoplay playsinline></video>
@@ -78,25 +78,28 @@ function _handleDOMEvent(event){
          * socket.on('check-broadcast-presence', function(userid, callback){..})
          */
         let ID;
-        let user
+        let user;
+        let socket; 
         if(this.id === 'callBtn1'){
             ID = 'iMac';
             user = { broadcastId:ID, userid:remoteFirst.userid, typeOfStreams:remoteFirst.session };
+            socket = remoteFirst.getSocket();
         }else if(this.id === 'callBtn2'){
             ID = 'vdi';
             user = { broadcastId:ID, userid:remoteFirst.userid, typeOfStreams:remoteFirst.session };
+            socket = remoteSecond.getSocket();
         }else{
             return;
         }
         console.log('[share]['+ID+']', 'emit check-broadcast-presence', ID);
-        remoteFirst.getSocket().emit('check-broadcast-presence', ID, function(isBroadcastExists) {
+        socket.emit('check-broadcast-presence', ID, function(isBroadcastExists) {
             if( isBroadcastExists ){
                 /*
                  * Scalable-Broadcast.js 을 같이 볼것.
                  * socket.on('join-broadcast', function(user){..});
                  */
                 console.log('[share]['+ID+']', 'emit join-broadcast', user);
-                remoteFirst.getSocket().emit('join-broadcast', user);
+                socket.emit('join-broadcast', user);
             }else{
                 alert('상대방의 스크린이 준비되지 않았습니다.');
             }

@@ -9,15 +9,17 @@
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 </head>
 <body>
-  <button id="captureBtn" disabled>Start 'Screan1' Broadcast</button>
-  <div id="screen-container">
-    <video id="captureVideo" autoplay muted playsinline></video>
-  </div>
-  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-  <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
-  <script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
-  <script src="https://cdn.webrtc-experiment.com:443/getScreenId.js"></script>
-  <script>
+    <div id="ctrl-container">
+        <button id="captureBtn" disabled>Start 'iMac' Broadcast</button>
+    </div>
+    <div id="screen-container">
+        <video id="captureVideo" autoplay muted playsinline></video>
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script src="https://cdn.webrtc-experiment.com:443/getScreenId.js"></script>
+<script>
 const videoPreview = document.getElementById('captureVideo');
 const ID = 'iMac';
 //window.addEventListener('unload', function(e){});

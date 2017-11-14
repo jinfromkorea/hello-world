@@ -5,19 +5,21 @@
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
-    <title>Screen#1</title>
+    <title>Screen#2</title>
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 </head>
 <body>
-  <button id="captureBtn" disabled>Start 'Screan1' Broadcast</button>
-  <div id="screen-container">
-    <video id="captureVideo" autoplay muted playsinline></video>
-  </div>
-  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-  <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
-  <script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
-  <script src="https://cdn.webrtc-experiment.com:443/getScreenId.js"></script>
-  <script>
+    <div id="ctrl-container">
+        <button id="captureBtn" disabled>Start 'vdi' Broadcast</button>
+    </div>
+    <div id="screen-container">
+        <video id="captureVideo" autoplay muted playsinline></video>
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script src="https://cdn.webrtc-experiment.com:443/getScreenId.js"></script>
+<script>
 const videoPreview = document.getElementById('captureVideo');
 const ID = 'vdi';
 //window.addEventListener('unload', function(e){});

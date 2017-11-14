@@ -18,45 +18,44 @@
 var cameraCnt = 0, micCnt = 0; isFront=true;
 var constraints = {audio:true, video:true};
 
-// iPhone iOS의 버전이 11이상이어야 webrtc 사용가능. 그래서 navigator.mediaDevices 가 없을수 있음. 
-console.log("navigator.mediaDevices 가 있는지 체크함.")
-if( navigator.mediaDevices == undefined ) {
-    var new_EL = document.createElement("p");
-    new_EL.innerHTML = 'navigator.mediaDevices 가 없음.';
-    document.getElementById('msgDiv').appendChild(new_EL);
-
-    document.getElementById('startButton').disabled = true;
-}
-console.log("2개 이상의 카메라가 있는지 체크함.")
-navigator.mediaDevices.enumerateDevices()
-.then( _deviceInfos => { 
-    console.log(_deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
-    _deviceInfos.forEach( _deviceInfo => { 
-        console.log(_deviceInfo);
-        if(_deviceInfo.kind=='videoinput'){cameraCnt++}
-        else if(_deviceInfo.kind=='audioinput'){micCnt++} 
-    }); 
-}).catch( error => console.log(error) 
-).then( () => { 
-    console.log(cameraCnt);
-    if( cameraCnt>1 ){
-        var new_EL = document.createElement("button");
-        new_EL.setAttribute('id', 'camera');
-        new_EL.innerHTML = '카메라전환';
-        new_EL.onclick = _changeCamera;
-        document.getElementById('btnDiv').appendChild(new_EL);
-    }else{
-        var new_EL = document.createElement("button");
-        new_EL.setAttribute('id', 'changeSize');
-        new_EL.innerHTML = 'Full';
-        new_EL.onclick = _changeSize;
-        new_EL.disabled = true;
-        document.getElementById('btnDiv').appendChild(new_EL);
+function onReady(event){
+    console.log(event);
+    console.log("navigator.mediaDevices 가 있는지 체크함.")
+    if( navigator.mediaDevices == undefined ) {
+        var new_EL = document.createElement("p");
+        new_EL.innerHTML = 'navigator.mediaDevices 가 없음.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+        document.getElementById('startButton').disabled = true;
     }
-});
+    console.log("2개 이상의 카메라가 있는지 체크함.")
+    navigator.mediaDevices.enumerateDevices().then( _deviceInfos => { 
+        console.log(_deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
+        _deviceInfos.forEach( _deviceInfo => { 
+            console.log(_deviceInfo);
+            if(_deviceInfo.kind=='videoinput'){cameraCnt++}
+            else if(_deviceInfo.kind=='audioinput'){micCnt++} 
+        }); 
+    }).catch( error => console.log(error) 
+    ).then( () => { 
+        console.log(cameraCnt);
+        if( cameraCnt>1 ){
+            var new_EL = document.createElement("button");
+            new_EL.setAttribute('id', 'camera');
+            new_EL.innerHTML = '카메라전환';
+            new_EL.onclick = _changeCamera;
+            document.getElementById('btnDiv').appendChild(new_EL);
+        }else{
+            var new_EL = document.createElement("button");
+            new_EL.setAttribute('id', 'changeSize');
+            new_EL.innerHTML = 'Full';
+            new_EL.onclick = _changeSize;
+            new_EL.disabled = true;
+            document.getElementById('btnDiv').appendChild(new_EL);
+        }
+    });
+}
+// iPhone iOS의 버전이 11이상이어야 webrtc 사용가능. 그래서 navigator.mediaDevices 가 없을수 있음. 
 
-document.getElementById('startButton').onclick = _getUserMedia;
-document.getElementById('video').addEventListener('loadedmetadata', _showSize );
 
 function _showSize(event) {
     console.log(event);
@@ -105,6 +104,11 @@ function _handleError(error){
     new_EL.innerHTML = error.name;
     document.getElementById('msgDiv').appendChild(new_EL);
 }
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', onReady);
+document.getElementById('startButton').addEventListener('click', _getUserMedia);
+document.getElementById('video').addEventListener('loadedmetadata', _showSize);
 </script>
 </body>
 </html>
