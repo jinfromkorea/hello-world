@@ -22,29 +22,25 @@
     <a-scene id="aScene">
     </a-scene>
     <video id="environment" autoplay></video>
-    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-    <script type="text/javascript">
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script type="text/javascript">
 var cameraSource = (function(global) {
-  var id='source-camera', title='Camera', videoElement=null, constraints={video:{facingMode:"environment"}};
-  function start(opts) {
-    if (opts.constraints) {
-      constraints = opts.constraints;
+    var id='source-camera', title='Camera', videoElement=null, constraints={video:{facingMode:"environment"}};
+    function start(opts) {
+        constraints = opts.constraints;
+        videoElement = opts.videoElement;
+        _showCameraPreview(opts.callback);
     }
-    videoElement = opts.videoElement;
-    showCameraPreview(opts.callback);
-  }
-  function showCameraPreview(_callbcak) {
-    navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-      if (videoElement) {
-        videoElement.srcObject = stream;
-        videoElement.play();
-      }
-      if (_callbcak) {
-        _callbcak(stream);
-      }
-    }, function(err) { console.error(err); });
-  }
-  return { id: id, title: title, start: start };
+    function _showCameraPreview(_callbcak) {
+        navigator.mediaDevices.getUserMedia(constraints).then( stream => {
+            videoElement.srcObject = stream;
+            videoElement.play();
+            if (_callbcak) {
+                _callbcak(stream);
+            }
+        }).catch( error => console.error(error) );
+    }
+    return { id: id, title: title, start: start };
 })(this);
     </script>
     <script type="text/javascript">
@@ -73,7 +69,7 @@ function onReady(event){
             cameraSource.start({
                 videoElement: video,
                 constraints: { video:{facingMode:"environment"}},
-                callback: function(_stream) {
+                callback: function( stream ) {
                     var htmlStr = '<a-image id="controls" src="ar-music-ctrls.png" position="0 0 -30" scale="20 25 20"></a-image>';
                     document.querySelector('#aScene').appendChild(new DOMParser().parseFromString(htmlStr, 'text/html').body.firstChild);
                 }

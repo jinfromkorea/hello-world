@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <title>Screen Share</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div id="btnDiv">
+      <button id="startButton">Start watchPosition</button>
+      <button id="stopButton">Stop watchPosition</button>
+    </div>
+	<div id="googleMap" style="width:100%;height:400px;"></div>
+    <div id="msgDiv"></div>
+    <div id="m2Div"></div>
+    <div id="m3Div"></div>
+<script>
+window.addEventListener('unload', _handleDOMEvent);
+window.addEventListener("devicemotion", _handleDOMEvent, true);
+window.addEventListener("deviceorientation", _handleDOMEvent, true);
+document.addEventListener('DOMContentLoaded', _handleDOMEvent);
+document.getElementById('startButton').addEventListener('click', _handleDOMEvent);
+let watchId, marker;
+function _handleDOMEvent(event){
+	if( event.type === 'DOMContentLoaded'){
+		if ( window.navigator && window.navigator.geolocation ){
+			console.log('Geolocation API를 허용하는구먼. ');
+		}
+	}else if( event.type === 'click'){
+		if(event.target.id === 'startButton'){
+			watchId = navigator.geolocation.watchPosition( position =>{
+				console.log('watchPosition : ', watchId, position);
+				document.getElementById('msgDiv').innerHTML
+				 = 'latitude(위도) : ' + position.coords.latitude +'/'
+				 + 'longitude(경도) : ' + position.coords.longitude + '<br>'
+				 + 'altitude(고도) : ' + position.coords.altitude + '<br>'
+				 + 'accuracy(정확성) ' + position.coords.accuracy + '/'
+				 + 'altitudeAccuracy : ' + position.coords.altitudeAccuracy + '<br>'
+				 + 'heading : ' + position.coords.heading + '/'
+				 + 'speed : ' + position.coords.speed;
+
+				console.log( map==undefined );
+				if( map ){
+					if( marker ){
+						marker.setMap(null);
+					}
+					map.setCenter(new google.maps.LatLng(position.coords.latitude, position.coords.longitude));
+					map.setZoom(18);
+					map.setTilt(45);// 우리나라 지도는 45도 이미지는 지원 안되는듯. 
+					marker = new google.maps.Marker({ position: {lat:position.coords.latitude, lng:position.coords.longitude} });
+					marker.setMap(map);
+
+				}
+			}, error => {
+				console.log(error);
+			}, { //PositionOptions 는 3가지 가능하고. 
+				enableHighAccuracy:true, //true 일경우 battery사용이 많아짐.
+				maximumAge:1000, // milliseconds. cashing 함. 
+				timeout:1000 // milliseconds 이니까. 1초마다 갱신
+			});
+		}else if(event.target.id === 'stopButton'){
+			navigator.geolocation.clearWatch(watchId);
+		}
+	}else if( event.type === 'unload' ){
+		navigator.geolocation.clearWatch(watchId);
+	}else if ( event.type === 'devicemotion'){
+	    var x = event.accelerationIncludingGravity.x;
+	    var y = event.accelerationIncludingGravity.y;
+	    var z = event.accelerationIncludingGravity.z;
+		document.getElementById('m2Div').innerHTML
+		 = 'x,y,z=' + x.toFixed(2) +','+y.toFixed(2)+','+z.toFixed(2);
+	    console.log(x, y, z);
+	}else if ( event.type === 'deviceorientation'){
+	    var absolute = event.absolute;
+	    var alpha = event.alpha;
+	    var beta = event.beta;
+	    var gamma = event.gamma;
+		document.getElementById('m3Div').innerHTML
+		 = 'absolute,alpha,beta,gamma=' + absolute +','+alpha.toFixed(2)+','+beta.toFixed(2)+','+gamma.toFixed(2);
+	    console.log(absolute, alpha, beta, gamma);
+	}
+	console.log(event);
+}
+
+let map;
+function myMap() {
+	console.log('callback');
+	let pangyo = {lat:37.4, lng:127.1}
+	map = new google.maps.Map(document.getElementById("googleMap"), {
+    	center: pangyo,
+    	zoom  : 5
+	});
+}
+</script>
+<!-- async 특성을 사용하면 Maps JavaScript API가 로드되는 동안 브라우저가 나머지 웹사이트를 렌더링할 수 있습니다 -->
+<script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyA_T9BZ7tNk7T6kJBNOjUJK3pAVR9v4MiA&callback=myMap"></script>
+</body>
+</html>
