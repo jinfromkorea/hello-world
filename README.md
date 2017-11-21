@@ -8,7 +8,7 @@ src / nodejs / README.md
 
 # Demo
 
-[getUserMedia](./src/webrtc-getusermedia/)
+[getUserMedia](./src/getusermedia/)
 
 [peerconnection with firebase](./src/webrtc-peerconnection-with-firebase/)
 
