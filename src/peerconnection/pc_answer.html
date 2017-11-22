@@ -123,20 +123,22 @@ function _handleIceConnectionState(event){
         let new_EL = document.createElement("p");
         new_EL.innerHTML = '[info] 연결이 끊어졌습니다.';
         document.getElementById('msgDiv').appendChild(new_EL);
-        pc.close();
-    }else if(pc.iceConnectionState === 'failed'){
-        document.getElementById('msgDiv').innerHTML='';
-        let new_EL = document.createElement("p");
-        new_EL.innerHTML = '[info] 연결에 실패했습니다.';
-        document.getElementById('msgDiv').appendChild(new_EL);
-        pc.close();
-    }else if(pc.iceConnectionState === 'closed'){
-        pc = null;
         console.log('delete '+dataKey);
         firebase.database().ref('/test/answer/'+dataKey).remove();
         dataKey = null;
         firebase.database().ref('/test/offer').on('child_added', _monitorOffer);
         firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+    }else if(pc.iceConnectionState === 'failed'){
+        document.getElementById('msgDiv').innerHTML='';
+        let new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] 연결에 실패했습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+        console.log('delete '+dataKey);
+        firebase.database().ref('/test/answer/'+dataKey).remove();
+        dataKey = null;
+        firebase.database().ref('/test/offer').on('child_added', _monitorOffer);
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+    }else if(pc.iceConnectionState === 'closed'){
     }
 }
 function _handleOnTrack(event){ 
@@ -147,12 +149,7 @@ function _handleOnTrack(event){
 }
 function _createAnswer(desc, pc){
     console.log('dom->click', pc.localDescription, pc.remoteDescription);
-    pc.setRemoteDescription(desc)
-    .then( () => {
-        return pc.createAnswer();
-    }).then( answer => {
-        pc.setLocalDescription(answer)
-    }).then( () => {
+    pc.setRemoteDescription(desc).then( () => pc.createAnswer()).then( answer => pc.setLocalDescription(answer)).then( () => {
         let dataRef = firebase.database().ref('/test/answer').push( {
             url      :window.location.href, 
             platform :navigator.platform, 

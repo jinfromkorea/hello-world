@@ -20,7 +20,7 @@
 <body>
     <a-scene id="aScene">
     </a-scene>
-    <video id="environment" autoplay></video>
+    <video id="environment" autoplay muted playsinline loop></video>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <script type="text/javascript">
 var cameraSource = (function(global) {
@@ -72,7 +72,7 @@ function onReady(event){
             cameraSource.start({
                 videoElement: video,
                 constraints: { video:{facingMode:"environment"}},
-                callback: function( stream ) {
+                callback: function() {
                     var htmlStr = '<a-image id="controls" src="ar-music-ctrls.png" position="0 0 -30" scale="20 25 20"></a-image>';
                     document.querySelector('#aScene').appendChild(new DOMParser().parseFromString(htmlStr, 'text/html').body.firstChild);
                 }
@@ -83,7 +83,7 @@ function onReady(event){
             cameraSource.start({
                 videoElement: video,
                 constraints: { video:true },
-                callback: function( stream ) {
+                callback: function() {
                     var htmlStr = '<a-image id="controls" src="ar-music-ctrls.png" position="0 0 -30" scale="20 25 20"></a-image>';
                     document.querySelector('#aScene').appendChild(new DOMParser().parseFromString(htmlStr, 'text/html').body.firstChild);
                 }

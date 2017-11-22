@@ -7,71 +7,34 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <base target="_blank">
   <title>YUJIN WebVR</title>
-  <link rel="icon" sizes="192x192" href="./images/webrtc-icon-192x192.png">
   <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
-  <script src="https://unpkg.com/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
-  <!-- aframe.js 밑에다 environment component 를 추가해야함. --> 
 </head>
 <body>
-  <a-scene stats id="scene">
-    <a-assets>
-      <video id="localStream" autoplay></video>
-      <video id="remote1Stream" autoplay></video>
-    </a-assets>
-    <!--
-    <a-scene stats></a-scene>
-    --> 
-
-    <a-plane position="-5 1.5 -3" scale="1 1 1" rotation="0 -90 0" width="8"  height="3" color="#7B0000" side="double"></a-plane>
-    <a-plane position="5 1.5 -3"  scale="1 1 1" rotation="0 -90 0" width="8"  height="3" color="#0000A4" side="double"></a-plane>
-    <a-plane position="0 0 -3"    scale="1 1 1" rotation="-90 0 0" width="10" height="8" color="#443300" side="double"></a-plane>
-    <a-plane position="0 1.5 -7"  scale="1 1 1" rotation="0 0 0"   width="10" height="3" color="#216320" side="double"></a-plane>
-    <a-plane id="camera1" position="-3.1 1.5 -6.99" width="3" height="2" color="#000000">
-      <a-text  position="0 -0.9 0.05" value="local" align="center" baseline="bottom" color="#ff0000"></a-text>
-    </a-plane>
-    <a-plane id="camera2" position="0 1.5 -6.99" width="3" height="2" color="#000000">
-      <a-text  position="0 -0.9 0.05" value="remote" align="center" baseline="bottom" color="#ff0000"></a-text>
-    </a-plane>
-    <a-camera>
-      <a-cursor></a-cursor>
-    </a-camera>
-  </a-scene>
-  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
-  <script>
-var localSource = (function(global) {
-    var id='source-camera', title='Camera', videoElement=null, constraints={video:true};
-    function start(opts) {
-        if (opts.constraints) {
-          constraints = opts.constraints;
-        }
-        videoElement = opts.videoElement;
-        showCameraPreview(opts.callback);
-    }
-    function showCameraPreview(_callbcak) {
-        navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
-            if (videoElement) {
-                videoElement.srcObject = stream;
-                videoElement.play();
-            }
-            if (_callbcak) {
-                _callbcak(stream);
-            }
-        }, function(err) { console.error(err); });
-    }
-    return { id: id, title: title, start: start };
-})(this);
-
+    <a-scene id="aScene">
+        <a-assets>
+            <video id="remoteStream" autoplay muted playsinline></video>
+        </a-assets>
+        <a-sky color="#ECECEC"></a-sky>
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+        <a-plane id="previewArea" position="0 1.5 -4.1" width="3" height="2" color="#000000">
+        </a-plane>
+    </a-scene>
+<script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script>
 var remoteSource = (function(global){
-    var id = 'source-remote', title='remote', videoElement=null;
+    console.log('remoteSource 준비');
+    var id = 'remote-peer', title = 'remote', videoElement = null;
     function start(opts){
         videoElement = opts.videoElement;
-        showRemotePreview(opts.callback, opts.stream);
+        _showRemotePreview(opts.callback, opts.stream);
     }
-    function showRemotePreview(_callback, _stream){
+    function _showRemotePreview(_callback, _stream){
         videoElement.srcObject = _stream;
         videoElement.play();
-        _callback(_stream);
+        if( _callback ){
+            _callback(_stream);
+        }
     }
     return {id:id, title:title, start:start}
 })(this);
@@ -95,8 +58,19 @@ pc = new RTCPeerConnection(servers);
 pc.onicecandidate = _handleIceCandidate; 
 pc.oniceconnectionstatechange = _handleIceConnectionState;
 pc.ontrack = _handleOnTrack;
-
-
+/*
+pc.onaddstream = function(e){console.log('pc','onaddstream', e)};
+pc.onconnectionstatechange = function(e){console.log('pc','onconnectionstatechange', e)};
+pc.ondatachannel = function(e){console.log('pc','ondatachannel', e)};
+pc.onicegatheringstatechange = function(e){console.log('pc','onicegatheringstatechange',e)};
+pc.onidentityresult = function(e){console.log('pc','onidentityresult',e)};
+pc.onidpassertionerror = function(e){console.log('pc','onidpassertionerror',e)};
+pc.onidpvalidationerror = function(e){console.log('pc','onidpvalidationerror',e)};
+pc.onnegotiationneeded = function(e){console.log('pc','onnegotiationneeded',e)};
+pc.onpeeridentity = function(e){console.log('pc','onpeeridentity',e)};
+pc.onremovestream = function(e){console.log('pc','onremovestream',e)};
+pc.onsignalingstatechange = function(e){console.log('pc','onsignalingstatechange',e)};
+*/
 function _handleIceCandidate(event){
     console.log('pc','onicecandidate', event);
     if(event.candidate){
@@ -108,44 +82,53 @@ function _handleIceCandidate(event){
 }
 function _handleIceConnectionState(event){
     console.log('pc','oniceconnectionstatechange', event);
+    console.log('pc', pc.iceConnectionState);
     if(pc.iceConnectionState === 'checking'){
-        firebase.database().ref('/test/offer').off('child_added', _monitorOffer);
-    } else if(pc.iceConnectionState === 'connected'){
+        firebase.database().ref('/test/offer').off('child_added', _createAnswer);
+    }else if(pc.iceConnectionState === 'connected'){
     }else if(pc.iceConnectionState === 'disconnected'){
-        document.getElementById('remoteVideo').srcObject = null;
-    }else if(pc.iceConnectionState === 'failed'){
-    }else if(pc.iceConnectionState === 'closed'){
+        document.querySelector('#remoteStream').srcObject = null;
+        document.querySelector('#previewArea').removeChild(document.querySelector('#remoteVideo'));
         console.log('delete '+dataKey);
         firebase.database().ref('/test/answer/'+dataKey).remove();
         dataKey = null;
         firebase.database().ref('/test/offer').on('child_added', _createAnswer);
         firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+    }else if(pc.iceConnectionState === 'failed'){
+        console.log('delete '+dataKey);
+        firebase.database().ref('/test/answer/'+dataKey).remove();
+        dataKey = null;
+        firebase.database().ref('/test/offer').on('child_added', _createAnswer);
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+    }else if(pc.iceConnectionState === 'closed'){
     }
 }
-function _handleOnTrack(e){ 
-    var vid1 = document.querySelector('#remote1Stream');
-    remoteSource.start({
-        videoElement:vid1, 
-        stream:e.streams[0], 
-        callback:function(){
-            var scene = document.querySelector('#camera2');
-            var aobj = document.createElement('a-video');
-            aobj.setAttribute('id', 'pc1');
-            aobj.setAttribute('src', '#remote1Stream' );
-            aobj.setAttribute('position', '0 0 0.01');
-            aobj.setAttribute('rotation', '0 0 0');
-            aobj.setAttribute('scale', '2.7 1.7 0.1');
-            aobj.setAttribute('playsinline', 'true');
-            scene.appendChild(aobj);
-        }
-    });
+function _handleOnTrack(event){ 
+    console.log('pc','ontrack', event);
+    if (document.getElementById('remoteStream').srcObject !== event.streams[0]) {
+        var vid1 = document.querySelector('#remoteStream');
+        remoteSource.start({
+            videoElement:vid1, 
+            stream:event.streams[0], 
+            callback:function(){
+                let scene = document.querySelector('#previewArea');
+                let videoObj = document.createElement('a-video');
+                videoObj.setAttribute('id', 'remoteVideo');
+                videoObj.setAttribute('src', '#remoteStream' );
+                videoObj.setAttribute('position', '0 0 0.01');
+                videoObj.setAttribute('rotation', '0 0 0');
+                videoObj.setAttribute('scale', '2.7 1.7 0.1');
+                videoObj.setAttribute('playsinline', 'true');
+                scene.appendChild(videoObj);
+            }
+        });
+    }
 };
 
 function _createAnswer ( childSnapshot, prevChildKey ){
-    console.log(JSON.parse(childSnapshot.val()));
-    let desc = new RTCSessionDescription(JSON.parse(childSnapshot.val()).sdp);
-    pc.setRemoteDescription(desc).then( () => pc.createAnswer()).then( answer => pc.setLocalDescription(answer)
-      ).then( () => {
+    console.log('firebase', childSnapshot.val());
+    let desc = new RTCSessionDescription(JSON.parse(childSnapshot.val().sdp));
+    pc.setRemoteDescription(desc).then( () => pc.createAnswer() ).then( answer => pc.setLocalDescription(answer)).then( () => {
         let dataRef = firebase.database().ref('/test/answer').push( {
             url      :window.location.href, 
             platform :navigator.platform, 
@@ -166,23 +149,18 @@ function _monitorIce(childSnapshot, prevChildKey){
   </script>
   <script>
 function onReady() {
-    var vid = document.querySelector('#localStream');
-    localSource.start({
-        videoElement: vid,
-        constraints: { video:{facingMode:"environment"}},
-        callback: function(_stream) {
-            var scene = document.querySelector('#camera1');
-            var aobj = document.createElement('a-video');
-            aobj.setAttribute('id', 'local');
-            aobj.setAttribute('src', '#localStream' );
-            aobj.setAttribute('position', '0 0 0.01'); // 정중앙
-            aobj.setAttribute('rotation', '0 0 0');
-            aobj.setAttribute('scale', '2.7 1.7 0.1');
-            aobj.setAttribute('playsinline', 'true');
-            scene.appendChild(aobj);
-        }
-    });
+    console.log('DOMContentLoaded', event);
 }
+function onCloseed(){
+    if(dataKey){
+        console.log('delete '+dataKey);
+        firebase.database().ref('/test/answer/'+dataKey).remove();
+        pc.close();
+    }else{
+        console.log('do nothing');
+    }
+}
+window.addEventListener('unload', onCloseed);
 document.addEventListener('DOMContentLoaded', onReady);
   </script>
 </body>

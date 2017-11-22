@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
     <title>getUserMedia</title>
-    <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+    <script src="https://aframe.io/releases/0.7.0/aframe.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <a-scene id="aScene">
@@ -13,8 +13,7 @@
         </a-assets>
         <a-sky color="#ECECEC"></a-sky>
         <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
-        <a-plane id="previewArea" position="0 1.5 -3.99" width="3" height="2" color="#000000">
-            <a-text id="previewAreaDesc" position="0 1.2 0.05" value="local" align="center" baseline="bottom" color="#ff0000"></a-text>
+        <a-plane id="previewArea" position="0 1.5 -4.1" width="3" height="2" color="#000000">
         </a-plane>
     </a-scene>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
@@ -63,6 +62,14 @@ function onReady(event){
     ).then( () => { 
         console.log('DOMContentLoaded', cameraCnt+'개의 camera가 확인되었습니다.');
         console.log('DOMContentLoaded', 'cameraSource.start() 를 실행합니다.');
+        let scene = document.querySelector('#previewArea');
+        let textObj = document.createElement('a-text');
+        textObj.setAttribute('position', '0 1.2 0.05');
+        textObj.setAttribute('value', cameraCnt>1?'environment':'user' );
+        textObj.setAttribute('align', 'center' );
+        textObj.setAttribute('baseline', 'bottom' );
+        textObj.setAttribute('color', '#ff0000' );
+        scene.appendChild(textObj);
         if( cameraCnt>1 ){
             let vid = document.querySelector('#localStream');
             cameraSource.start({
@@ -70,34 +77,33 @@ function onReady(event){
                 constraints: { video:{facingMode:"environment"}},
                 callback: function(_stream) {
                     let scene = document.querySelector('#previewArea');
-                    let aobj = document.createElement('a-video');
-                    aobj.setAttribute('id', 'local');
-                    aobj.setAttribute('src', '#localStream' );
-                    aobj.setAttribute('position', '0 0 0.01'); // 정중앙
-                    aobj.setAttribute('rotation', '0 0 0');
-                    aobj.setAttribute('scale', '2.7 1.7 0.1');
-                    aobj.setAttribute('playsinline', 'true');
-                    scene.appendChild(aobj);
+                    let videoObj = document.createElement('a-video');
+                    videoObj.setAttribute('id', 'local');
+                    videoObj.setAttribute('src', '#localStream' );
+                    videoObj.setAttribute('srcObject', _stream);
+                    videoObj.setAttribute('position', '0 0 0.1'); // 정중앙
+                    videoObj.setAttribute('rotation', '0 0 0');
+                    videoObj.setAttribute('scale', '2.7 1.7 0.1');
+                    videoObj.setAttribute('playsinline', 'true');
+                    scene.appendChild(videoObj);
                 }
             });
         }else{
             let vid = document.querySelector('#localStream');
-            vid.style.transform = 'scaleX(-1)'; //desctop은 
             cameraSource.start({
                 videoElement: vid,
                 constraints: { video:{facingMode:"user"}},
                 callback: function(_stream) {
                     let scene = document.querySelector('#previewArea');
-                    let text = document.querySelector('#previewAreaDesc');
-                    text.setAttribute('value','user')
-                    let aobj = document.createElement('a-video');
-                    aobj.setAttribute('id', 'local');
-                    aobj.setAttribute('src', '#localStream' );
-                    aobj.setAttribute('position', '0 0 0.01'); // 정중앙
-                    aobj.setAttribute('rotation', '0 0 0');
-                    aobj.setAttribute('scale', '2.7 1.7 0.1');
-                    aobj.setAttribute('playsinline', 'true');
-                    scene.appendChild(aobj);
+                    let videoObj = document.createElement('a-video');
+                    videoObj.setAttribute('id', 'local');
+                    videoObj.setAttribute('src', '#localStream' );
+                    videoObj.setAttribute('srcObject', _stream);
+                    videoObj.setAttribute('position', '0 0 0.1'); // 정중앙
+                    videoObj.setAttribute('rotation', '0 180 0'); // 웹캠의 좌우 변경.
+                    videoObj.setAttribute('scale', '2.7 1.7 0.1');
+                    videoObj.setAttribute('playsinline', 'true');
+                    scene.appendChild(videoObj);
                 }
             });
         }
