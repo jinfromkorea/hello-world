@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>offer with firebase</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div id="btnDiv">
+        <button id="offerBtn" disabled>Offer</button>
+        <button id="getAnswerBtn" disabled>Get Answer</button>
+    </div>
+    <video id="localVideo" controls autoplay muted playsinline></video>
+    <div id="msgDiv">
+    </div>
+<script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script>
+// Initialize Firebase
+const config = {
+    apiKey: "AIzaSyDKEYRybMQOAkpMZp2F3bTvQFboa2VJgrI",
+    authDomain: "test-webrtc-56501.firebaseapp.com",
+    databaseURL: "https://test-webrtc-56501.firebaseio.com",
+    projectId: "test-webrtc-56501",
+    storageBucket: "test-webrtc-56501.appspot.com",
+    messagingSenderId: "1044697177062"
+};
+firebase.initializeApp(config);
+const servers = {'iceServers': [{'urls': 'stun:stun.services.mozilla.com'}, 
+                              {'urls': 'stun:stun.l.google.com:19302'}, 
+                              {'urls': 'turn:numb.viagenie.ca','credential': 'yujin','username': 'yujin@email.com'}]};
+const constraint = {audio:true, video:true};
+let localStream, pc, dataKey;
+pc = new RTCPeerConnection(servers);
+pc.onicecandidate = _handleIceCandidate;
+pc.oniceconnectionstatechange = _handleIceConnectionState;
+/*
+pc.onaddstream = function(e){console.log('pc','onaddstream', e)};
+pc.onconnectionstatechange = function(e){console.log('pc','onconnectionstatechange', e)};
+pc.ondatachannel = function(e){console.log('pc','ondatachannel', e)};
+pc.onicegatheringstatechange = function(e){console.log('pc','onicegatheringstatechange',e)};
+pc.onidentityresult = function(e){console.log('pc','onidentityresult',e)};
+pc.onidpassertionerror = function(e){console.log('pc','onidpassertionerror',e)};
+pc.onidpvalidationerror = function(e){console.log('pc','onidpvalidationerror',e)};
+pc.onnegotiationneeded = function(e){console.log('pc','onnegotiationneeded',e)};
+pc.onpeeridentity = function(e){console.log('pc','onpeeridentity',e)};
+pc.onremovestream = function(e){console.log('pc','onremovestream',e)};
+pc.onsignalingstatechange = function(e){console.log('pc','onsignalingstatechange',e)};
+pc.ontrack = function(e){console.log('pc','ontrack',e)}
+*/
+
+document.addEventListener('DOMContentLoaded', _handleDOMEvent);
+document.getElementById('localVideo').addEventListener('loadedmetadata', _handleDOMEvent);
+document.getElementById('offerBtn'  ).addEventListener('click', _handleDOMEvent);
+window.addEventListener('unload', _handleDOMEvent);
+function _handleDOMEvent(event){
+    console.log('dom', event);
+    if( event.type === 'DOMContentLoaded' ){
+        navigator.mediaDevices.getUserMedia(constraint).then( _handleStream ).catch( _handleError );
+        firebase.database().ref('/test/offer').once('value', function(dataSnapshot){
+            let cnt = 0;
+            dataSnapshot.forEach( data => cnt++ );
+            if( cnt>0 ){
+                let new_EL = document.createElement("p");
+                new_EL.innerHTML = '[ToDo] Offer 버튼을 클릭하세요.';
+                document.getElementById('msgDiv').appendChild(new_EL);
+            }
+        });
+    }else if( event.type === 'loadedmetadata' ) {
+        let new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] video가 준비되었습니다. (width: ' + this.videoWidth +'px, height: ' + this.videoHeight + 'px)';
+        document.getElementById('msgDiv').appendChild(new_EL);
+
+        document.getElementById('offerBtn').disabled = false;
+    }else if( event.type === 'click' ) {
+        if( event.target.id === 'offerBtn' ){
+            let new_EL = document.createElement("p");
+            new_EL.innerHTML = '[info] 연결 대기중입니다.';
+            document.getElementById('msgDiv').appendChild(new_EL);
+            this.disabled = true;
+            localStream.getTracks().forEach( track => pc.addTrack(track, localStream) );
+            pc.createOffer().then( offer => pc.setLocalDescription(offer) ).then( () => _handleOffer() ).catch( error => _handleError );
+        }else if( event.target.id === 'getAnswerBtn' ){
+            document.getElementById('getAnswerBtn').disabled = true;
+        }
+    }else if( event.type === 'unload' ){
+        if(dataKey){
+            console.log('delete '+dataKey);
+            firebase.database().ref('/test/offer/'+dataKey).remove();
+            pc.close();
+        }else{
+            console.log('do nothing');
+        }
+    }
+}
+function _handleStream(stream){
+    console.log('dom->DOMContentLoaded', stream);
+    localStream = stream;
+    document.getElementById('localVideo').srcObject = stream;
+}
+function _handleError(error){
+    console.error(error);
+    let new_EL = document.createElement("p");
+    new_EL.innerHTML = '[error] '+error.name;
+    document.getElementById('msgDiv').appendChild(new_EL);
+}
+function _handleIceCandidate(event){
+    console.log('pc','onicecandidate', event);
+    if( event.candidate ) {
+        let iceRef = firebase.database().ref('/test/ice').push({
+            sender:'offer', 
+            ice   :JSON.stringify(event.candidate) 
+        });
+        iceRef.remove();
+    }else{
+        console.log('pc','onicecandidate', "Sent All Ice");
+    }
+}
+function _handleIceConnectionState(event){
+    console.log('pc','oniceconnectionstatechange', event);
+    console.log('pc', pc.iceConnectionState);
+    if(pc.iceConnectionState === 'new'){
+    }else if(pc.iceConnectionState === 'checking'){
+    }else if(pc.iceConnectionState === 'connected'){
+        let new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] 연결 되었습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }else if(pc.iceConnectionState === 'completed'){
+    }else if(pc.iceConnectionState === 'disconnected'){
+        document.getElementById('msgDiv').innerHTML='';
+        let new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] 연결이 끊어졌습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+
+        pc.getSenders().forEach(sender => pc.removeTrack(sender));
+
+        console.log('delete '+dataKey);
+        firebase.database().ref('/test/offer/'+dataKey).remove();
+        dataKey = null;
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+        document.getElementById('offerBtn').disabled = false;
+        new_EL = document.createElement("p");
+        new_EL.innerHTML = '[ToDo] Offer 버튼을 클릭하세요.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }else if(pc.iceConnectionState === 'failed'){
+        document.getElementById('msgDiv').innerHTML='';
+        let new_EL = document.createElement("p");
+        new_EL.innerHTML = '[info] 연결에 실패했습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+
+        pc.getSenders().forEach(sender => pc.removeTrack(sender));
+
+        console.log('delete '+dataKey);
+        firebase.database().ref('/test/offer/'+dataKey).remove();
+        dataKey = null;
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+        document.getElementById('offerBtn').disabled = false;
+        new_EL = document.createElement("p");
+        new_EL.innerHTML = '[ToDo] Offer 버튼을 클릭하세요.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }else if(pc.iceConnectionState === 'closed'){
+    }
+}
+function _handleOffer(){
+    console.log('dom->click', pc.localDescription, pc.remoteDescription);
+    let dataRef = firebase.database().ref('/test/offer').push({
+        url      :window.location.href, 
+        platform :navigator.platform, 
+        userAgent:navigator.userAgent, 
+        date     :new Date().toString(),
+        sdp      :JSON.stringify(pc.localDescription) 
+    });
+    dataKey = dataRef.key;
+    firebase.database().ref('/test/answer').on('child_added', _monitorAnswer);
+    firebase.database().ref('/test/ice').on('child_added', _monitorIce);
+}
+function _monitorAnswer(childSnapshot, prevChildKey){ 
+    console.log('firebase', childSnapshot.val());
+    let new_EL = document.createElement("p");
+    new_EL.innerHTML = '[info] 연결중입니다.';
+    document.getElementById('msgDiv').appendChild(new_EL);
+    let sdp = JSON.parse(childSnapshot.val().sdp);
+    pc.setRemoteDescription( new RTCSessionDescription( sdp ) );
+    firebase.database().ref('/test/answer').off('child_added', _monitorAnswer);
+}
+function _monitorIce(childSnapshot, prevChildKey){ 
+    if( childSnapshot.val().sender === 'answer' ){
+        console.log('firebase', childSnapshot.val());
+        pc.addIceCandidate( new RTCIceCandidate( JSON.parse(childSnapshot.val().ice) ) );
+    }
+}
+  </script>
+</body>
+</html>

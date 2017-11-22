@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <base target="_blank">
+  <title>YUJIN WebVR</title>
+  <link rel="icon" sizes="192x192" href="./images/webrtc-icon-192x192.png">
+  <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+  <script src="https://unpkg.com/aframe-environment-component/dist/aframe-environment-component.min.js"></script>
+  <!-- aframe.js 밑에다 environment component 를 추가해야함. --> 
+</head>
+<body>
+  <a-scene stats id="scene">
+    <a-assets>
+      <video id="localStream" autoplay></video>
+      <video id="remote1Stream" autoplay></video>
+    </a-assets>
+    <!--
+    <a-scene stats></a-scene>
+    --> 
+
+    <a-plane position="-5 1.5 -3" scale="1 1 1" rotation="0 -90 0" width="8"  height="3" color="#7B0000" side="double"></a-plane>
+    <a-plane position="5 1.5 -3"  scale="1 1 1" rotation="0 -90 0" width="8"  height="3" color="#0000A4" side="double"></a-plane>
+    <a-plane position="0 0 -3"    scale="1 1 1" rotation="-90 0 0" width="10" height="8" color="#443300" side="double"></a-plane>
+    <a-plane position="0 1.5 -7"  scale="1 1 1" rotation="0 0 0"   width="10" height="3" color="#216320" side="double"></a-plane>
+    <a-plane id="camera1" position="-3.1 1.5 -6.99" width="3" height="2" color="#000000">
+      <a-text  position="0 -0.9 0.05" value="local" align="center" baseline="bottom" color="#ff0000"></a-text>
+    </a-plane>
+    <a-plane id="camera2" position="0 1.5 -6.99" width="3" height="2" color="#000000">
+      <a-text  position="0 -0.9 0.05" value="remote" align="center" baseline="bottom" color="#ff0000"></a-text>
+    </a-plane>
+    <a-camera>
+      <a-cursor></a-cursor>
+    </a-camera>
+  </a-scene>
+  <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/4.4.0/firebase.js"></script>
+  <script>
+var localSource = (function(global) {
+    var id='source-camera', title='Camera', videoElement=null, constraints={video:true};
+    function start(opts) {
+        if (opts.constraints) {
+          constraints = opts.constraints;
+        }
+        videoElement = opts.videoElement;
+        showCameraPreview(opts.callback);
+    }
+    function showCameraPreview(_callbcak) {
+        navigator.mediaDevices.getUserMedia(constraints).then(function(stream) {
+            if (videoElement) {
+                videoElement.srcObject = stream;
+                videoElement.play();
+            }
+            if (_callbcak) {
+                _callbcak(stream);
+            }
+        }, function(err) { console.error(err); });
+    }
+    return { id: id, title: title, start: start };
+})(this);
+
+var remoteSource = (function(global){
+    var id = 'source-remote', title='remote', videoElement=null;
+    function start(opts){
+        videoElement = opts.videoElement;
+        showRemotePreview(opts.callback, opts.stream);
+    }
+    function showRemotePreview(_callback, _stream){
+        videoElement.srcObject = _stream;
+        videoElement.play();
+        _callback(_stream);
+    }
+    return {id:id, title:title, start:start}
+})(this);
+
+const servers = {'iceServers': [{'urls': 'stun:stun.services.mozilla.com'}, 
+                              {'urls': 'stun:stun.l.google.com:19302'}, 
+                              {'urls': 'turn:numb.viagenie.ca','credential': 'yujin','username': 'yujin@email.com'}]};
+const config = {
+    apiKey: "AIzaSyDKEYRybMQOAkpMZp2F3bTvQFboa2VJgrI",
+    authDomain: "test-webrtc-56501.firebaseapp.com",
+    databaseURL: "https://test-webrtc-56501.firebaseio.com",
+    projectId: "test-webrtc-56501",
+    storageBucket: "test-webrtc-56501.appspot.com",
+    messagingSenderId: "1044697177062"
+};
+firebase.initializeApp(config);
+firebase.database().ref('/test/offer').on('child_added', _createAnswer);
+
+let pc, dataKey;
+pc = new RTCPeerConnection(servers);
+pc.onicecandidate = _handleIceCandidate; 
+pc.oniceconnectionstatechange = _handleIceConnectionState;
+pc.ontrack = _handleOnTrack;
+
+
+function _handleIceCandidate(event){
+    console.log('pc','onicecandidate', event);
+    if(event.candidate){
+        let iceRef = firebase.database().ref('/test/ice').push({ sender:'answer', ice:JSON.stringify(event.candidate) });
+        iceRef.remove();
+    }else{
+        console.log('pc','onicecandidate', "Sent All Ice");
+    }
+}
+function _handleIceConnectionState(event){
+    console.log('pc','oniceconnectionstatechange', event);
+    if(pc.iceConnectionState === 'checking'){
+        firebase.database().ref('/test/offer').off('child_added', _monitorOffer);
+    } else if(pc.iceConnectionState === 'connected'){
+    }else if(pc.iceConnectionState === 'disconnected'){
+        document.getElementById('remoteVideo').srcObject = null;
+    }else if(pc.iceConnectionState === 'failed'){
+    }else if(pc.iceConnectionState === 'closed'){
+        console.log('delete '+dataKey);
+        firebase.database().ref('/test/answer/'+dataKey).remove();
+        dataKey = null;
+        firebase.database().ref('/test/offer').on('child_added', _createAnswer);
+        firebase.database().ref('/test/ice').off('child_added', _monitorIce);
+    }
+}
+function _handleOnTrack(e){ 
+    var vid1 = document.querySelector('#remote1Stream');
+    remoteSource.start({
+        videoElement:vid1, 
+        stream:e.streams[0], 
+        callback:function(){
+            var scene = document.querySelector('#camera2');
+            var aobj = document.createElement('a-video');
+            aobj.setAttribute('id', 'pc1');
+            aobj.setAttribute('src', '#remote1Stream' );
+            aobj.setAttribute('position', '0 0 0.01');
+            aobj.setAttribute('rotation', '0 0 0');
+            aobj.setAttribute('scale', '2.7 1.7 0.1');
+            aobj.setAttribute('playsinline', 'true');
+            scene.appendChild(aobj);
+        }
+    });
+};
+
+function _createAnswer ( childSnapshot, prevChildKey ){
+    console.log(JSON.parse(childSnapshot.val()));
+    let desc = new RTCSessionDescription(JSON.parse(childSnapshot.val()).sdp);
+    pc.setRemoteDescription(desc).then( () => pc.createAnswer()).then( answer => pc.setLocalDescription(answer)
+      ).then( () => {
+        let dataRef = firebase.database().ref('/test/answer').push( {
+            url      :window.location.href, 
+            platform :navigator.platform, 
+            userAgent:navigator.userAgent, 
+            date     :new Date().toString(),
+            sdp      :JSON.stringify(pc.localDescription) 
+        });
+        dataKey = dataRef.key;
+    });
+    firebase.database().ref('/test/ice').on('child_added', _monitorIce);
+}
+function _monitorIce(childSnapshot, prevChildKey){ 
+    if( childSnapshot.val().sender === 'offer' ){
+        console.log('firebase', childSnapshot.val());
+        pc.addIceCandidate( new RTCIceCandidate( JSON.parse(childSnapshot.val().ice) ) );
+    }
+}
+  </script>
+  <script>
+function onReady() {
+    var vid = document.querySelector('#localStream');
+    localSource.start({
+        videoElement: vid,
+        constraints: { video:{facingMode:"environment"}},
+        callback: function(_stream) {
+            var scene = document.querySelector('#camera1');
+            var aobj = document.createElement('a-video');
+            aobj.setAttribute('id', 'local');
+            aobj.setAttribute('src', '#localStream' );
+            aobj.setAttribute('position', '0 0 0.01'); // 정중앙
+            aobj.setAttribute('rotation', '0 0 0');
+            aobj.setAttribute('scale', '2.7 1.7 0.1');
+            aobj.setAttribute('playsinline', 'true');
+            scene.appendChild(aobj);
+        }
+    });
+}
+document.addEventListener('DOMContentLoaded', onReady);
+  </script>
+</body>
+</html>

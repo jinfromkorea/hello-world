@@ -4,7 +4,6 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
     <title>getUserMedia</title>
-    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
 <style>
     video, img {
@@ -25,13 +24,16 @@
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <script type="text/javascript">
 var cameraSource = (function(global) {
+    console.log('cameraSource 준비');
     var id='source-camera', title='Camera', videoElement=null, constraints={video:{facingMode:"environment"}};
     function start(opts) {
+        console.log('cameraSource', 'start', opts);
         constraints = opts.constraints;
         videoElement = opts.videoElement;
         _showCameraPreview(opts.callback);
     }
     function _showCameraPreview(_callbcak) {
+        console.log('cameraSource', '_showCameraPreview(getUserMedia)', _callbcak);
         navigator.mediaDevices.getUserMedia(constraints).then( stream => {
             videoElement.srcObject = stream;
             videoElement.play();
@@ -48,22 +50,23 @@ let cameraCnt = 0, micCnt = 0; isFront = true;
 let constraints = {audio:true, video:true};
 function onReady(event){
     console.log(event);
-    console.log("navigator.mediaDevices 가 있는지 체크함.")
+    console.log('DOMContentLoaded', "navigator.mediaDevices 가 있는지 체크함.")
     if( navigator.mediaDevices == undefined ) {
         console.log("no devices");
         return;
     }
-    console.log("2개 이상의 카메라가 있는지 체크함.")
+    console.log('DOMContentLoaded', "2개 이상의 카메라가 있는지 체크함.")
     navigator.mediaDevices.enumerateDevices().then( _deviceInfos => { 
-        console.log(_deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
+        console.log('DOMContentLoaded', _deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
         _deviceInfos.forEach( _deviceInfo => { 
-            console.log(_deviceInfo);
+            //console.log('DOMContentLoaded', _deviceInfo);
             if(_deviceInfo.kind=='videoinput'){cameraCnt++}
             else if(_deviceInfo.kind=='audioinput'){micCnt++} 
         }); 
     }).catch( error => console.log(error) 
     ).then( () => { 
-        console.log(cameraCnt);
+        console.log('DOMContentLoaded', cameraCnt+'개의 camera가 확인되었습니다.');
+        console.log('DOMContentLoaded', 'cameraSource.start() 를 실행합니다.');
         if( cameraCnt>1 ){
             let video = document.querySelector('#environment');
             cameraSource.start({
@@ -75,7 +78,16 @@ function onReady(event){
                 }
             });
         }else{
-            return;
+            let video = document.querySelector('#environment');
+            video.style.transform = 'scaleX(-1)'; //desctop은 
+            cameraSource.start({
+                videoElement: video,
+                constraints: { video:true },
+                callback: function( stream ) {
+                    var htmlStr = '<a-image id="controls" src="ar-music-ctrls.png" position="0 0 -30" scale="20 25 20"></a-image>';
+                    document.querySelector('#aScene').appendChild(new DOMParser().parseFromString(htmlStr, 'text/html').body.firstChild);
+                }
+            });
         }
     });
 }

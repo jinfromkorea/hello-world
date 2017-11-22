@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <title>getUserMedia</title>
+    <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+</head>
+<body>
+    <a-scene id="aScene">
+        <a-assets>
+            <video id="localStream" autoplay muted playsinline></video>
+        </a-assets>
+        <a-sky color="#ECECEC"></a-sky>
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+        <a-plane id="previewArea" position="0 1.5 -3.99" width="3" height="2" color="#000000">
+            <a-text id="previewAreaDesc" position="0 1.2 0.05" value="local" align="center" baseline="bottom" color="#ff0000"></a-text>
+        </a-plane>
+    </a-scene>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script type="text/javascript">
+var cameraSource = (function(global) {
+    console.log('cameraSource 준비');
+    var id='source-camera', title='Camera', videoElement=null, constraints={video:{facingMode:"environment"}};
+    function start(opts) {
+        console.log('cameraSource', 'start', opts);
+        constraints = opts.constraints;
+        videoElement = opts.videoElement;
+        _showCameraPreview(opts.callback);
+    }
+    function _showCameraPreview(_callbcak) {
+        console.log('cameraSource', '_showCameraPreview(getUserMedia)', _callbcak);
+        navigator.mediaDevices.getUserMedia(constraints).then( stream => {
+            videoElement.srcObject = stream;
+            videoElement.play();
+            if (_callbcak) {
+                _callbcak(stream);
+            }
+        }).catch( error => console.error(error) );
+    }
+    return { id: id, title: title, start: start };
+})(this);
+    </script>
+    <script type="text/javascript">
+let cameraCnt = 0, micCnt = 0; isFront = true;
+let constraints = {audio:true, video:true};
+function onReady(event){
+    console.log('DOMContentLoaded', event);
+    console.log('DOMContentLoaded', "navigator.mediaDevices 가 있는지 체크함.")
+    if( navigator.mediaDevices == undefined ) {
+        console.log('DOMContentLoaded', "no devices");
+        return;
+    }
+    console.log('DOMContentLoaded', "2개 이상의 카메라가 있는지 체크함.")
+    navigator.mediaDevices.enumerateDevices().then( _deviceInfos => { 
+        console.log('DOMContentLoaded', _deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
+        _deviceInfos.forEach( _deviceInfo => { 
+            //console.log('DOMContentLoaded', _deviceInfo);
+            if(_deviceInfo.kind=='videoinput'){cameraCnt++}
+            else if(_deviceInfo.kind=='audioinput'){micCnt++} 
+        }); 
+    }).catch( error => console.log('DOMContentLoaded', error) 
+    ).then( () => { 
+        console.log('DOMContentLoaded', cameraCnt+'개의 camera가 확인되었습니다.');
+        console.log('DOMContentLoaded', 'cameraSource.start() 를 실행합니다.');
+        if( cameraCnt>1 ){
+            let vid = document.querySelector('#localStream');
+            cameraSource.start({
+                videoElement: vid,
+                constraints: { video:{facingMode:"environment"}},
+                callback: function(_stream) {
+                    let scene = document.querySelector('#previewArea');
+                    let aobj = document.createElement('a-video');
+                    aobj.setAttribute('id', 'local');
+                    aobj.setAttribute('src', '#localStream' );
+                    aobj.setAttribute('position', '0 0 0.01'); // 정중앙
+                    aobj.setAttribute('rotation', '0 0 0');
+                    aobj.setAttribute('scale', '2.7 1.7 0.1');
+                    aobj.setAttribute('playsinline', 'true');
+                    scene.appendChild(aobj);
+                }
+            });
+        }else{
+            let vid = document.querySelector('#localStream');
+            vid.style.transform = 'scaleX(-1)'; //desctop은 
+            cameraSource.start({
+                videoElement: vid,
+                constraints: { video:{facingMode:"user"}},
+                callback: function(_stream) {
+                    let scene = document.querySelector('#previewArea');
+                    let text = document.querySelector('#previewAreaDesc');
+                    text.setAttribute('value','user')
+                    let aobj = document.createElement('a-video');
+                    aobj.setAttribute('id', 'local');
+                    aobj.setAttribute('src', '#localStream' );
+                    aobj.setAttribute('position', '0 0 0.01'); // 정중앙
+                    aobj.setAttribute('rotation', '0 0 0');
+                    aobj.setAttribute('scale', '2.7 1.7 0.1');
+                    aobj.setAttribute('playsinline', 'true');
+                    scene.appendChild(aobj);
+                }
+            });
+        }
+    });
+}
+    </script>
+    <script type="text/javascript">
+document.addEventListener('DOMContentLoaded', onReady);
+    </script>
+</body>
+</html>
