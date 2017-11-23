@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>GetScreen</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div id="btnDiv">
+        <button id="callBtn1" value='iMac' disabled>Get 'iMac' screen</button>
+        <button id="callBtn2" value='vdi' disabled>Get 'vdi' screen</button>
+    </div>
+    <div id="screen-container">
+        <video id="remoteScreen1" autoplay playsinline controls></video>
+        <video id="remoteScreen2" autoplay playsinline controls></video>
+    </div>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script>
+/* 
+ * RTCMultiConnection 생성자에는 2개 인자가 가능함. 
+ * 첫번째는 roomid 임.
+ *          connection.channel = connection.sessionid = roomid
+ * 두번째는 forceOptions임. useDefaultDevices, autoOpenOrJoin
+ */    
+document.addEventListener('DOMContentLoaded', _handleDOMEvent);
+document.getElementById('remoteScreen1').addEventListener('loadedmetadata', _handleDOMEvent);
+document.getElementById('remoteScreen2').addEventListener('loadedmetadata', _handleDOMEvent);
+document.getElementById('callBtn1').addEventListener('click', _handleDOMEvent);
+document.getElementById('callBtn2').addEventListener('click', _handleDOMEvent);
+
+let remoteFirst, remoteSecond;
+function _handleDOMEvent(event){
+    console.log(event);
+    if( event.type ==='DOMContentLoaded' ){
+        remoteFirst = new RTCMultiConnection();
+        remoteFirst.autoCloseEntireSession = true;
+        remoteFirst.dontCaptureUserMedia = true;
+        remoteFirst.enableScalableBroadcast = true;
+        remoteFirst.maxRelayLimitPerUser = 1;
+        remoteFirst.sdpConstraints.mandatory = { OfferToReceiveVideo: true, OfferToReceiveAudio: false };
+        remoteFirst.session = { screen: true, oneway: true };
+        remoteFirst.sessionid = 'iMac';
+        remoteFirst.socketMessageEvent = 'scalable-screen-broadcast-demo';
+        remoteFirst.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+        remoteFirst.videosContainer = document.getElementById('screen-container');
+        remoteFirst.connectSocket( _callback_connectSocket );
+        remoteFirst.onleave       = _handle_onleave;
+        remoteFirst.onstream      = _handle_onstream;
+        remoteFirst.onstreamended = _handle_onstreamended;
+        setupSocket(remoteFirst.getSocket(), remoteFirst);
+        remoteFirst.beforeRemovingStream = function(stream){console.log('test');return stream;}
+
+        remoteSecond = new RTCMultiConnection();
+        remoteSecond.autoCloseEntireSession = true;
+        remoteSecond.dontCaptureUserMedia = true;
+        remoteSecond.enableScalableBroadcast = true;
+        remoteSecond.maxRelayLimitPerUser = 1;
+        remoteSecond.sdpConstraints.mandatory = { OfferToReceiveVideo: true, OfferToReceiveAudio: false };
+        remoteSecond.session = { screen: true, oneway: true };
+        remoteSecond.sessionid = 'vdi';
+        remoteSecond.socketMessageEvent = 'scalable-screen-broadcast-demo';
+        remoteSecond.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+        remoteSecond.connectSocket( _callback_connectSocket );
+        remoteSecond.onleave       = _handle_onleave;
+        remoteSecond.onstream      = _handle_onstream;
+        remoteSecond.onstreamended = _handle_onstreamended;
+        setupSocket(remoteSecond.getSocket(), remoteSecond);
+        remoteSecond.videosContainer = document.getElementById('screen-container');
+    }else if( event.type === 'loadedmetadata' ){
+        console.log(this.videoWidth, this.videoHeight);
+    }else if( event.type === 'click' ){
+        /*
+         * Scalable-Broadcast.js 을 같이 볼것. 
+         * socket.on('check-broadcast-presence', function(userid, callback){..})
+         */
+        let ID;
+        let user;
+        let socket; 
+        if(this.id === 'callBtn1'){
+            ID = 'iMac';
+            user = { broadcastId:ID, userid:remoteFirst.userid, typeOfStreams:remoteFirst.session };
+            socket = remoteFirst.getSocket();
+        }else if(this.id === 'callBtn2'){
+            ID = 'vdi';
+            user = { broadcastId:ID, userid:remoteFirst.userid, typeOfStreams:remoteFirst.session };
+            socket = remoteSecond.getSocket();
+        }else{
+            return;
+        }
+        console.log('[share]['+ID+']', 'emit check-broadcast-presence', ID);
+        socket.emit('check-broadcast-presence', ID, function(isBroadcastExists) {
+            if( isBroadcastExists ){
+                /*
+                 * Scalable-Broadcast.js 을 같이 볼것.
+                 * socket.on('join-broadcast', function(user){..});
+                 */
+                console.log('[share]['+ID+']', 'emit join-broadcast', user);
+                socket.emit('join-broadcast', user);
+            }else{
+                alert('상대방의 스크린이 준비되지 않았습니다.');
+            }
+        });
+    }
+}
+/*
+var connection = new RTCMultiConnection( null, {useDefaultDevices: true} );
+connection.enableScalableBroadcast = true;
+connection.maxRelayLimitPerUser = 1;
+connection.autoCloseEntireSession = true;
+connection.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+connection.socketMessageEvent = 'scalable-screen-broadcast-demo';
+connection.session = { screen: true, oneway: true };
+connection.videosContainer = document.getElementById('screen-container');
+connection.dontCaptureUserMedia = true;
+connection.connectSocket( _callback_connectSocket );
+*/
+
+function _callback_connectSocket(socket){
+    console.log('[share]', 'RTCMultiConnection 준비함.[connectSocket()]', socket, socket.id, socket.query);
+}
+function setupSocket(socket, connection){
+    console.log('[share]', 'RTCMultiConnection 준비함.[setupSocket()]', socket, connection);
+    /*
+     * document.getElementById('join-room1').onclick 부분을 볼것.
+     * socket.emit('join-broadcast', ..) 으로 Scalable-Broadcast.js 부분의 로직 보면됨.
+     */
+    socket.on('join-broadcaster', function(hintsToJoinBroadcast) {
+        /*
+         * RTCMultiConnection.js 을 보면.. 
+         * connection.join = function(remoteUserId, options){..}
+         */
+        console.log('[share]['+connection.sessionid+']', 'join-broadcaster');
+        connection.join(hintsToJoinBroadcast.userid);
+    });
+    socket.on('logs', function(log) {
+        console.log('[share]['+connection.sessionid+']', log);
+    });
+    socket.on('rejoin-broadcast', function(broadcastId) {
+        console.log('[share]['+connection.sessionid+']', 'rejoin-broadcast 찍힐리가 없음.');
+        connection.attachStreams = [];
+        socket.emit('check-broadcast-presence', broadcastId, function(isBroadcastExists) {
+            console.log('[share]', 'check-broadcast-presence', broadcastId, isBroadcastExists, connection.userid);
+            if(!isBroadcastExists) {
+                // the first person (i.e. real-broadcaster) MUST set his user-id
+                connection.userid = broadcastId;
+            }
+            socket.emit('join-broadcast', { broadcastId: broadcastId, userid: connection.userid, typeOfStreams: connection.session });
+        });
+    });
+    socket.on('broadcast-stopped', function(broadcastId) {
+        console.log('[share]['+connection.sessionid+']', 'broadcast-stopped', broadcastId);
+        alert('This broadcast has been stopped.');
+    });
+    socket.on('start-broadcasting', function(typeOfStreams) {
+        console.log('[share]['+connection.sessionid+']', 'start-broadcasting 찍힐리가 없음');
+    });
+    if( connection.sessionid === 'iMac' ){
+        document.getElementById('callBtn1').disabled = false;
+    }else if( connection.sessionid === 'vdi' ){
+        document.getElementById('callBtn2').disabled = false;
+    }
+}
+function _handle_onstream(e){
+    console.log('[share]['+this.sessionid+']', 'onstream', e, this);
+    this.videosContainer.insertBefore(e.mediaElement, this.videosContainer.firstChild);
+    e.mediaElement.play()
+}
+function _handle_onstreamended(e){ 
+    console.log('[share]['+this.sessionid+']', 'onstreamended', e, this); 
+    e.mediaElement.parentNode.removeChild(e.mediaElement);
+    alert('stream ended');
+}
+function _handle_onleave(user){
+    console.log('[share]['+this.sessionid+']', 'onleave', user, this);
+}
+</script>
+</body>
+</html>

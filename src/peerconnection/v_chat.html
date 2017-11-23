@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+<meta name="mobile-web-app-capable" content="yes">
+<meta id="theme-color" name="theme-color" content="#ffffff">
+<title>video chat</title>
+<style type="text/css">
+video {
+  background-color: #ddd;
+  border-radius: 7px;
+  margin: 10px 0px 0px 10px;
+  width: 320px;
+  height: 240px;
+}
+button {
+  margin: 5px 0px 0px 10px !important;
+}
+</style>
+</head>
+<body>
+    <div id="btnDiv">
+        <button id="startButton">Start</button>
+        <button id="callButton" disabled>Call</button>
+        <button id="hangupButton" disabled>Hang Up</button>
+    </div>
+    <div id="videoDiv">
+        <video id="localVideo" autoplay muted playsinline></video>
+        <video id="remoteVideo" autoplay playsinline></video>
+    </div>
+    <div id="msgDiv">
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://www.gstatic.com/firebasejs/4.3.0/firebase.js"></script>
+<script>
+const servers = {'iceServers': [{'urls': 'stun:stun.services.mozilla.com'}, 
+                              {'urls': 'stun:stun.l.google.com:19302'}, 
+                              {'urls': 'turn:numb.viagenie.ca','credential': 'yujin','username': 'yujin@email.com'}]};
+// Initialize Firebase
+const config = {
+    apiKey: "AIzaSyDKEYRybMQOAkpMZp2F3bTvQFboa2VJgrI",
+    authDomain: "test-webrtc-56501.firebaseapp.com",
+    databaseURL: "https://test-webrtc-56501.firebaseio.com",
+    projectId: "test-webrtc-56501",
+    storageBucket: "test-webrtc-56501.appspot.com",
+    messagingSenderId: "1044697177062"
+};
+firebase.initializeApp(config);
+
+let database = firebase.database().ref('/sample1');
+let yourId = Math.floor(Math.random()*1000000000);
+let pc;
+let isUnload = false;
+
+document.addEventListener('DOMContentLoaded', _handleDOMEvent);
+document.getElementById('localVideo' ).addEventListener('loadedmetadata', _handleDOMEvent);
+document.getElementById('remoteVideo').addEventListener('loadedmetadata', _handleDOMEvent);
+document.getElementById('startButton' ).addEventListener('click', _handleDOMEvent);
+document.getElementById('callButton'  ).addEventListener('click', _handleDOMEvent);
+document.getElementById('hangupButton').addEventListener('click', _handleDOMEvent);
+window.addEventListener('unload', _handleDOMEvent);
+function _handleDOMEvent(event){
+    console.log('dom', event);
+    if( event.type === 'DOMContentLoaded' ){
+        database.on('child_added', _monitorFirebase);
+    }else if( event.type === 'loadedmetadata' ) {
+        console.log('dom',event.target.id, this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px');
+        if( event.target.id === 'localVideo' ){
+            document.getElementById('callButton').disabled = false;
+        }else{
+            document.getElementById('hangupButton').disabled = false;
+        }
+    }else if( event.type === 'click' ) {
+        if( event.target.id === 'startButton' ){
+            pc = new RTCPeerConnection(servers);
+            pc.onicecandidate = _handleIceCandidate;
+            pc.oniceconnectionstatechange = _handleIceConnectionState;
+            pc.ontrack = _handleOnTrack;
+            pc.onaddstream = function(e){console.log('pc','onaddstream', e)};
+            pc.onconnectionstatechange = function(e){console.log('pc','onconnectionstatechange', e)};
+            pc.ondatachannel = function(e){console.log('pc','ondatachannel', e)};
+            pc.onicegatheringstatechange = function(e){console.log('pc','onicegatheringstatechange',e)};
+            pc.onidentityresult = function(e){console.log('pc','onidentityresult',e)};
+            pc.onidpassertionerror = function(e){console.log('pc','onidpassertionerror',e)};
+            pc.onidpvalidationerror = function(e){console.log('pc','onidpvalidationerror',e)};
+            pc.onnegotiationneeded = function(e){console.log('pc','onnegotiationneeded',e)};
+            pc.onpeeridentity = function(e){console.log('pc','onpeeridentity',e)};
+            pc.onremovestream = function(e){console.log('pc','onremovestream',e)};
+            pc.onsignalingstatechange = function(e){console.log('pc','onsignalingstatechange',e)};
+            navigator.mediaDevices.getUserMedia({audio:true, video:true}).then( stream => { 
+                // https://w3c.github.io/mediacapture-main/getusermedia.html 참고.
+                // stream은 MediaStream 객체이고 id, active, onaddtrack, onremovetrack 이 있음.
+                document.getElementById('localVideo').srcObject = stream;
+                document.getElementById('localVideo').srcObject.getTracks().forEach( track => pc.addTrack(track, document.getElementById('localVideo').srcObject) );
+            }).catch( error => console.log(error));
+            this.disabled = true;
+        }else if( event.target.id === 'callButton' ){
+                pc.createOffer().then( offer => pc.setLocalDescription(offer) ).then( () => {
+                let offerRef = database.push({ sender:yourId, type:'offer', sdp:JSON.stringify(pc.localDescription)});
+                offerRef.remove();
+            });
+            this.disabled = true;
+        }else if( event.target.id === 'hangupButton' ){
+            document.getElementById('remoteVideo').srcObject = null;
+            document.getElementById('localVideo').srcObject = null;
+            pc.getSenders().forEach(sender => pc.removeTrack(sender));
+            pc.close();
+            this.disabled = true;
+        }
+    }else if( event.type === 'unload' ) {
+        isUnload = true;
+        if ( pc ){
+            pc.close();
+        }
+    }
+}
+function _handleIceCandidate(event){
+    console.log('pc','onicecandidate', event);
+    if( event.candidate ) {
+        let iceRef = database.push({sender:yourId, type:'ice', ice:JSON.stringify(event.candidate)});
+        iceRef.remove();
+    }else{
+        console.log('pc','onicecandidate', "Sent All Ice");
+    }
+}
+function _handleIceConnectionState(event){
+    console.log('pc','oniceconnectionstatechange', event);
+    console.log('pc', pc.iceConnectionState);
+    if(pc.iceConnectionState === 'new'){
+    }else if(pc.iceConnectionState === 'checking'){
+    }else if(pc.iceConnectionState === 'connected'){
+        document.getElementById('callButton').disabled = true;
+    }else if(pc.iceConnectionState === 'completed'){
+    }else if(pc.iceConnectionState === 'disconnected'){
+        document.getElementById('remoteVideo').srcObject = null;
+        document.getElementById('localVideo').srcObject = null;
+        pc.close();
+        /*
+        pc.getSenders().forEach(sender => pc.removeTrack(sender));
+        document.getElementById('remoteVideo').srcObject = null;
+        document.getElementById('localVideo').srcObject = null;
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('callButton').disabled = true;
+        document.getElementById('hangupButton').disabled = true;
+        */
+    }else if(pc.iceConnectionState === 'failed'){
+        pc.close();
+        /*
+        pc.getSenders().forEach(sender => pc.removeTrack(sender));
+        document.getElementById('remoteVideo').srcObject = null;
+        document.getElementById('localVideo').srcObject = null;
+        document.getElementById('startButton').disabled = false;
+        document.getElementById('callButton').disabled = true;
+        document.getElementById('hangupButton').disabled = true;
+        */
+    }else if(pc.iceConnectionState === 'closed'){
+        pc = null;
+        if( !isUnload ){
+            pc = new RTCPeerConnection(servers);
+            pc.onicecandidate = _handleIceCandidate;
+            pc.oniceconnectionstatechange = _handleIceConnectionState;
+            pc.ontrack = _handleOnTrack;
+            pc.onaddstream = function(e){console.log('pc','onaddstream', e)};
+            pc.onconnectionstatechange = function(e){console.log('pc','onconnectionstatechange', e)};
+            pc.ondatachannel = function(e){console.log('pc','ondatachannel', e)};
+            pc.onicegatheringstatechange = function(e){console.log('pc','onicegatheringstatechange',e)};
+            pc.onidentityresult = function(e){console.log('pc','onidentityresult',e)};
+            pc.onidpassertionerror = function(e){console.log('pc','onidpassertionerror',e)};
+            pc.onidpvalidationerror = function(e){console.log('pc','onidpvalidationerror',e)};
+            pc.onnegotiationneeded = function(e){console.log('pc','onnegotiationneeded',e)};
+            pc.onpeeridentity = function(e){console.log('pc','onpeeridentity',e)};
+            pc.onremovestream = function(e){console.log('pc','onremovestream',e)};
+            pc.onsignalingstatechange = function(e){console.log('pc','onsignalingstatechange',e)};
+            document.getElementById('startButton').disabled = false;
+            document.getElementById('callButton').disabled = true;
+            document.getElementById('hangupButton').disabled = true;
+        }
+    }
+}
+function _handleOnTrack(event){ 
+    console.log('pc', 'ontrack', event);
+    if (document.getElementById('remoteVideo').srcObject !== event.streams[0]) {
+        document.getElementById('remoteVideo').srcObject = event.streams[0];
+    }
+}
+function _monitorFirebase(data, pre){
+    if( pc ){
+        if( yourId != data.val().sender ){
+            console.log('firebase', data.val().type, data.val());
+            if( 'ice' === data.val().type ){
+                let ice = JSON.parse(data.val().ice);
+                pc.addIceCandidate(new RTCIceCandidate(ice));
+            }else if( 'offer' === data.val().type ){
+                let sdp = JSON.parse(data.val().sdp);
+                pc.setRemoteDescription(new RTCSessionDescription(sdp)).then( () => pc.createAnswer() ).then( answer => pc.setLocalDescription(answer)).then( () => {
+                    let answerRef = database.push({sender:yourId, type:'answer', sdp:JSON.stringify(pc.localDescription)});
+                    answerRef.remove();
+                });
+            }else if( 'answer' === data.val().type ){
+                let sdp = JSON.parse(data.val().sdp);
+                pc.setRemoteDescription(new RTCSessionDescription(sdp));
+            }
+        }
+    }
+}
+</script>
+</body>
+</html>

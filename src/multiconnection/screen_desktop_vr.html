@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <base target="_blank">
+    <title>MultiConnection</title>
+    <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+</head>
+<body>
+    <a-scene stats id="scene">
+        <a-assets>
+            <video id="remoteScreen" autoplay playsinline></video>
+        </a-assets>
+        <a-sky color="#ECECEC"></a-sky>
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+        <a-plane id="previewArea" position="0 1.5 -4.1" width="3" height="2" color="#000000">
+        </a-plane>
+        <a-camera>
+            <a-cursor></a-cursor>
+        </a-camera>
+    </a-scene>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script>
+var remoteSource = (function(global){
+    var streamid, title='camera1', videoElement=null;//, connection=null;
+    function start(opts){
+        streamid     = opts.streamid;
+        videoElement = opts.videoElement;
+        //connection   = opts.connection;
+        //connection.videosContainer.appendChild(videoElement);
+        showRemotePreview(opts.callback, opts.stream);
+    }
+    function showRemotePreview(_callback, _stream){
+        videoElement.srcObject = _stream;
+        videoElement.play();
+        if( _callback ){
+            _callback(_stream);
+        }
+    }
+    return {streamid:streamid, title:title, start:start}
+})(this);
+
+let desktop = new RTCMultiConnection();
+desktop.autoCloseEntireSession = true;
+desktop.dontCaptureUserMedia = true;
+desktop.enableScalableBroadcast = true;
+desktop.maxRelayLimitPerUser = 1;
+desktop.sdpConstraints.mandatory = { OfferToReceiveVideo: true, OfferToReceiveAudio: false };
+desktop.session = { screen: true, oneway: true };
+desktop.sessionid = 'desktop';
+desktop.socketMessageEvent = 'scalable-screen-broadcast-demo';
+desktop.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+//desktop.videosContainer = document.getElementById('screen-container');
+desktop.connectSocket( _callback_connectSocket );
+desktop.onleave       = _handle_onleave;
+desktop.onstream      = _handle_onstream;
+desktop.onstreamended = _handle_onstreamended;
+setupSocket(desktop.getSocket(), desktop);
+
+//desktop.beforeRemovingStream = function(stream){console.log('test');return stream;}
+
+/*
+var connection = new RTCMultiConnection( null, {useDefaultDevices: true} );
+connection.enableScalableBroadcast = true;
+connection.maxRelayLimitPerUser = 1;
+connection.autoCloseEntireSession = true;
+connection.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+connection.socketMessageEvent = 'scalable-screen-broadcast-demo';
+connection.session = { screen: true, oneway: true };
+connection.videosContainer = document.getElementById('screen-container');
+connection.dontCaptureUserMedia = true;
+connection.connectSocket( _callback_connectSocket );
+*/
+
+function _callback_connectSocket(socket){
+    console.log('[share]', 'RTCMultiConnection 준비함.[connectSocket()]', socket, socket.id, socket.query);
+}
+function setupSocket(socket, connection){
+    console.log('[share]', 'RTCMultiConnection 준비함.[setupSocket()]', socket, connection);
+    /*
+     * document.getElementById('join-room1').onclick 부분을 볼것.
+     * socket.emit('join-broadcast', ..) 으로 Scalable-Broadcast.js 부분의 로직 보면됨.
+     */
+    socket.on('join-broadcaster', function(hintsToJoinBroadcast) {
+        /*
+         * RTCMultiConnection.js 을 보면.. 
+         * connection.join = function(remoteUserId, options){..}
+         */
+        console.log('[share]['+connection.sessionid+']', 'join-broadcaster');
+        connection.join(hintsToJoinBroadcast.userid);
+    });
+    socket.on('logs', function(log) {
+        console.log('[share]['+connection.sessionid+']', log);
+    });
+    socket.on('rejoin-broadcast', function(broadcastId) {
+        console.log('[share]['+connection.sessionid+']', 'rejoin-broadcast 찍힐리가 없음.');
+        connection.attachStreams = [];
+        socket.emit('check-broadcast-presence', broadcastId, function(isBroadcastExists) {
+            console.log('[share]', 'check-broadcast-presence', broadcastId, isBroadcastExists, connection.userid);
+            if(!isBroadcastExists) {
+                // the first person (i.e. real-broadcaster) MUST set his user-id
+                connection.userid = broadcastId;
+            }
+            socket.emit('join-broadcast', { broadcastId: broadcastId, userid: connection.userid, typeOfStreams: connection.session });
+        });
+    });
+    socket.on('broadcast-stopped', function(broadcastId) {
+        console.log('[share]['+connection.sessionid+']', 'broadcast-stopped', broadcastId);
+        alert('This broadcast has been stopped.');
+    });
+    socket.on('start-broadcasting', function(typeOfStreams) {
+        console.log('[share]['+connection.sessionid+']', 'start-broadcasting 찍힐리가 없음');
+    });
+}
+function _handle_onstream(e){
+    console.log('[share]['+this.sessionid+']', 'onstream', e, this);
+    e.mediaElement.removeAttribute('src');
+    e.mediaElement.removeAttribute('srcObject');
+    console.log(e.mediaElement);
+
+    let video = document.querySelector('#remoteScreen');
+    remoteSource.start({
+        videoElement : video, 
+        stream       : e.stream, 
+        streamid     : e.streamid,
+        connection   : this,
+        callback:function(){
+            var scene = document.querySelector('#previewArea');
+            var aobj = document.createElement('a-video');
+            aobj.setAttribute('id', 'screen-desktop');
+            aobj.setAttribute('src', '#remoteScreen' );
+            aobj.setAttribute('position', '0 0 0.01');
+            aobj.setAttribute('rotation', '0 0 0');
+            aobj.setAttribute('scale', '2.7 1.7 0.1');
+            aobj.setAttribute('playsinline', 'true');
+            scene.appendChild(aobj);
+        }
+    });
+}
+function _handle_onstreamended(e){ 
+    console.log('[share]['+this.sessionid+']', 'onstreamended', e, this); 
+    document.querySelector('#remoteScreen').srcObject = null;
+    document.querySelector('#previewArea').removeChild(document.querySelector('#screen-desktop'));
+}
+function _handle_onleave(user){
+    console.log('[share]['+this.sessionid+']', 'onleave', user, this);
+}
+</script>
+<script>
+function onReady() {
+    /*
+     * Scalable-Broadcast.js 을 같이 볼것. 
+     * socket.on('check-broadcast-presence', function(userid, callback){..})
+     */
+    let ID = 'desktop';
+    let user = { broadcastId:ID, userid:desktop.userid, typeOfStreams:desktop.session };
+    let socket = desktop.getSocket();
+    console.log('[share]['+ID+']', 'emit check-broadcast-presence', ID);
+    socket.emit('check-broadcast-presence', ID, function(isBroadcastExists) {
+        if( isBroadcastExists ){
+            /*
+             * Scalable-Broadcast.js 을 같이 볼것.
+             * socket.on('join-broadcast', function(user){..});
+             */
+            console.log('[share]['+ID+']', 'emit join-broadcast', user);
+            socket.emit('join-broadcast', user);
+        }else{
+            alert('상대방의 스크린이 준비되지 않았습니다.');
+        }
+    });
+
+  //desktop.join('desktop');
+}
+document.addEventListener('DOMContentLoaded', onReady);
+</script>
+</body>
+</html>

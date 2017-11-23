@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>ScreenCapturing</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div id="ctrl-container">
+        <button id="captureBtn" disabled>Start</button>
+    </div>
+    <div id="screen-container">
+        <video id="captureVideo" autoplay muted playsinline></video>
+    </div>
+    <div id="msgDiv">
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.min.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script src="https://cdn.webrtc-experiment.com:443/getScreenId.js"></script>
+<script>
+const videoPreview = document.getElementById('captureVideo');
+const ID = 'desktop';
+//window.addEventListener('unload', function(e){});
+//document.addEventListener('DOMContentLoaded', function(e){});
+document.getElementById('captureVideo').addEventListener('loadedmetadata', _handleDOMEvent);
+document.getElementById('captureBtn').addEventListener('click', _handleDOMEvent);
+/* 
+ * RTCMultiConnection 생성자에는 2개 인자가 가능함. 
+ * 첫번째는 roomid 임.
+ *          connection.channel = connection.sessionid = roomid
+ * 두번째는 forceOptions임. useDefaultDevices, autoOpenOrJoin
+ */    
+let connection = new RTCMultiConnection( null, {useDefaultDevices: true});
+connection.autoCloseEntireSession = true;
+connection.enableScalableBroadcast = true;
+connection.maxRelayLimitPerUser = 1;
+connection.sdpConstraints.mandatory = { OfferToReceiveVideo: false, OfferToReceiveAudio: false };
+connection.session = { screen: true, oneway: true };
+connection.sessionid = ID;
+connection.socketMessageEvent = 'scalable-screen-broadcast-demo';
+connection.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+connection.userid = ID;
+connection.videosContainer = document.getElementById('screen-container');
+connection.connectSocket( _callback_connectSocket );
+connection.getScreenConstraints = _handle_getScreenConstraints;
+connection.onleave              = _handle_onleave;
+connection.onstream             = _handle_onstream;
+connection.onstreamended        = _handle_onstreamended;
+
+
+function _callback_connectSocket(socket){
+    /*
+     * [ Scalable-Broadcast.js ]에서 처리
+     * join-broadcast             -> rejoin-broadcast, join-broadcaster, logs, start-broadcasting, number-of-broadcast-viewers-updated 을 발생시킴. 
+     * scalable-broadcast-message -> scalable-broadcast-message
+     * can-relay-broadcast
+     * can-not-relay-broadcast
+     * check-broadcast-presence
+     * get-number-of-users-in-specific-broadcast
+     * disconnect                 -> broadcast-stopped, number-of-broadcast-viewers-updated
+     */
+    /*
+     * [ RTCMultiConnection.js ]에서.
+     * extra-data-updated
+     * user-left
+     * connect                    -> extra-data-updated
+     * disconnect
+     * join-with-password
+     * invalid-password
+     * password-max-tries-over
+     * user-disconnected
+     * user-connected
+     * closed-entire-session
+     * userid-already-taken
+     * logs
+     * number-of-broadcast-viewers-updated
+     * room-full
+     * become-next-modrator       -> shift-moderator-control-on-disconnect
+     * ?                          -> disconnect-with
+     * ?(openOfJoin)              -> changed-uuid, set-password
+     * ?(open)                    -> changed-uuid
+     * ?(becomePublicModerator)   -> become-a-public-moderator
+     * ?(dontMakeMeModerator)     -> dont-make-me-moderator
+     * ?(changeUserId)            -> changed-uuid
+     * ?(closeEntireSession)      -> close-entire-session
+     * ?(getPublicModerators)     -> get-public-moderators
+     * ?(setCustomSocketEvent)    -> set-custom-socket-event-listener
+     * ?(getNumberOfBroadcastViewers) -> get-number-of-users-in-specific-broadcast
+     * ?(checkPresence)           -> check-presence
+     * ?(updateExtraData)         -> extra-data-updated
+     */
+/*    
+    socket.on('join-broadcaster', function(hintsToJoinBroadcast) {
+        console.log('['+ID+']', 'join-broadcaster', hintsToJoinBroadcast, '찍힐리가 없음');
+    });
+    socket.on('rejoin-broadcast', function(ID) {
+        console.log('['+ID+']', 'rejoin-broadcast', ID, '찍힐리가 없음');
+    });
+*/
+    socket.on('broadcast-stopped', function(broadcastId) {
+        console.log('['+ID+']', 'on broadcast-stopped', broadcastId);
+        alert('This broadcast has been stopped.');
+    });
+    /*
+     * document.getElementById('captureBtn').onclick 부분을 볼것.
+     * socket.emit('join-broadcast', ..) 으로 Scalable-Broadcast.js 부분의 로직 보면됨.
+     */
+    socket.on('start-broadcasting', function(typeOfStreams) {
+        console.log('['+ID+']', 'on start-broadcasting', typeOfStreams);
+        /*
+         * RTCMultiConnection.js 을 보면.. 
+         * connection.open = function(localUserid, isPublicModerator){..}
+         */
+        connection.open(connection.userid, function() {});
+    });
+    /*
+     * socket.emit('start-broadcasting', users[user.userid].typeOfStreams);
+     * socket.emit('logs', 'You <' + user.userid + '> are now serving the broadcast.');
+     */
+    socket.on('logs', function(log) {
+        console.log('['+ID+']', log);
+    });
+    document.getElementById('captureBtn').disabled = false;
+}
+/*
+ * connection.open(..) 에서 connection.captureUserMedia(..) 가 불리고.. 
+ * connection.captureUserMedia(..) 에서 connection.getScreenConstraints 가 불리는듯.
+ */
+function _handle_getScreenConstraints(callback){
+    console.log('['+ID+']', '크롬 브라우저의 Screen Capturing 플러그인이 필요합니다.');
+    getScreenConstraints(function(error, screen_constraints) {
+        if (!error) {
+            screen_constraints = connection.modifyScreenConstraints(screen_constraints);
+            callback(error, screen_constraints);
+            return;
+        }
+        throw error;
+    });
+}
+function _handle_onstream(e){
+    console.log('['+ID+']', 'onstream', e, this);
+    this.videosContainer.insertBefore(e.mediaElement, this.videosContainer.firstChild);
+    e.mediaElement.play()
+}
+function _handle_onstreamended(e){ 
+    console.log('['+ID+']', 'onstreamended', e, this); 
+    e.mediaElement.parentNode.removeChild(e.mediaElement);
+}
+function _handle_onleave(user){
+    console.log('['+ID+']', 'onleave', user);
+}
+function _handleDOMEvent(event){
+    console.log('['+ID+']', event, this); //MouseEvent
+    if( event.type === 'click'){
+        if( event.target.id === 'captureBtn'){
+            /*
+             * [ Scalable-Broadcast.js ]에서 처리
+             * join-broadcast             : socket.on('join-broadcast', function(user){..});
+             * scalable-broadcast-message
+             * can-relay-broadcast
+             * can-not-relay-broadcast
+             * check-broadcast-presence   : socket.on('check-broadcast-presence', function(userid, callback){..})
+             * get-number-of-users-in-specific-broadcast
+             * disconnect
+             */
+            let user = { broadcastId:ID, userid:ID, typeOfStreams:connection.session };
+            console.log('['+ID+']', 'emit check-broadcast-presence', ID);
+            connection.getSocket().emit('check-broadcast-presence', ID, function(isBroadcastExists) {
+                if(isBroadcastExists) {
+                    alert('스크린을 제공할 수 없습니다.');
+                }else{
+                    console.log('['+ID+']', 'emit join-broadcast', user);
+                    connection.getSocket().emit('join-broadcast', user);
+                }
+            });
+        }
+    } else if( event.type === 'loadedmetadata' ){
+        console.log(this.videoWidth, this.videoHeight);
+    }
+};
+  </script>
+</body>
+</html>
