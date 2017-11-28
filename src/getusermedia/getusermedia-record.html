@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <title>getUserMedia</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div id="btnDiv">
+        <button id="record" style="display:none">Start Recording</button>
+        <button id="play" style="display:none">Play</button>
+        <button id="download" style="display:none">Download</button>
+        <button id="camera" style="display:none">카메라전환</button>
+    </div>
+    <div id="videoDiv">
+        <video id="video" controls autoplay muted playsinline></video>
+        <video id="recorded" autoplay></video>
+    </div>
+    <div id="msgDiv">
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script>
+let cameraCnt = 0, micCnt = 0; isFront=true;
+let constraints = {audio:true, video:true};
+let options = {mimeType:''};//audioBitsPerSecond, videoBitsPerSecond, bitsPerSecond 도 추가할 수 있음.
+let isStartRecording = false;
+let recordedBlobs, sourceBuffer;
+let mediaRecorder;
+
+function _handleDOMEvent(event){
+    console.log('dom', event);
+    if( event.type === 'DOMContentLoaded' ){
+        console.log('dom -> DOMContentLoaded', "navigator.mediaDevices 가 있는지 체크함.")
+        if( navigator.mediaDevices == undefined ) {
+            var new_EL = document.createElement("p");
+            new_EL.innerHTML = 'navigator.mediaDevices 가 없음.';
+            document.getElementById('msgDiv').appendChild(new_EL);
+            return;
+        }
+        console.log('dom -> DOMContentLoaded', "MediaRecorder.isTypeSupported()로 mimeType 체크함.")
+        if ( MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ){
+            options.mimeType = 'video/webm;codecs=vp9';
+        } else if ( MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ) {
+            options.mimeType = 'video/webm;codecs=vp8';
+        } else if ( MediaRecorder.isTypeSupported('video/webm') ) {
+            options.mimeType = 'video/webm';
+        } else if ( MediaRecorder.isTypeSupported('video/mp4') ) {
+            options.mimeType = 'video/mp4';
+        } else {
+            var new_EL = document.createElement("p");
+            new_EL.innerHTML = 'MediaRecorder 에서 지원하지 않습니다.';
+            document.getElementById('msgDiv').appendChild(new_EL);
+        }
+
+        console.log('dom -> DOMContentLoaded', "스마트폰인지/데스크탑인지 체크함.")
+        navigator.mediaDevices.enumerateDevices().then( _deviceInfos => { 
+            _deviceInfos.forEach( _deviceInfo => { 
+                if(_deviceInfo.kind=='videoinput'){cameraCnt++}
+                else if(_deviceInfo.kind=='audioinput'){micCnt++} 
+            }); 
+        }).catch( error => console.log(error) 
+        ).then( () => { 
+            console.log('dom -> DOMContentLoaded', cameraCnt+"개의 videoinput 이 있음.");
+            if( cameraCnt>1 ){
+                document.getElementById('camera').style.display = 'block';
+                document.getElementById('video').style.width = "100%";
+            }
+        });
+        navigator.mediaDevices.getUserMedia(constraints).then(_handleStream).catch(_handleError);
+    }else if( event.type === 'click' ){
+        if( event.target.id === 'record' ){
+            isStartRecording = !isStartRecording;
+            this.textContent = isStartRecording ? 'Stop Recording' : 'Start Recording';
+            if( isStartRecording ){
+                console.log('dom -> click', 'Recoding 시작');
+                recordedBlobs = [];
+                try {
+                    mediaRecorder = new MediaRecorder(window.stream, options);
+                } catch (e) {
+                    console.error('Exception while creating MediaRecorder: ' + e);
+                    alert('Exception while creating MediaRecorder: ' + e + '. mimeType: ' + options.mimeType);
+                    return;
+                }
+                mediaRecorder.ondataavailable = _handleDataAvailable; // recordedBlobs.push(event.data) 가 수행됨.
+                mediaRecorder.onstart = _handleStart;
+                mediaRecorder.onstop = _handleStop;
+                mediaRecorder.onerror = function(e){console.log('MediaRecorder','onerror', e)};
+                mediaRecorder.onpause = function(e){console.log('MediaRecorder','onpause', e)};
+                mediaRecorder.onresume = function(e){console.log('MediaRecorder','onresume', e)};
+                mediaRecorder.start(10); // collect 10ms of data
+            }else{
+                console.log('dom -> click', 'Recoding 종료');
+                mediaRecorder.stop();
+            }
+        }else if( event.target.id === 'play' ){
+            console.log('dom -> click', '재생');
+            let superBuffer = new Blob(recordedBlobs, {type: 'video/webm'});
+            document.getElementById('recorded').src = window.URL.createObjectURL(superBuffer);
+        }else if( event.target.id === 'download' ){
+            let blob = new Blob(recordedBlobs, {type: 'video/webm'});
+            let url = window.URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'test.webm';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(function() {
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            }, 100);
+        }else if( event.target.id === 'camera' ){
+            constraints = { audio:true, video:{facingMode : isFront?"user":"environment"} };
+            navigator.mediaDevices.getUserMedia(constraints).then(_handleStream).catch(_handleError);
+        }
+    }else if( event.type === 'loadedmetadata' ){
+        document.getElementById('record').style.display = 'block';
+    }else if( event.type === 'unload' ){
+    }
+}
+function _handleStream(stream){
+    //console.log(stream);
+    window.stream = stream;
+    document.getElementById('video').srcObject = stream;
+}
+function _handleError(error){
+    console.log(error);
+    var new_EL = document.createElement("p");
+    new_EL.innerHTML = error.name;
+    document.getElementById('msgDiv').appendChild(new_EL);
+}
+function _handleDataAvailable(event){
+    //console.log('MediaRecorder','ondataavailable', event);
+    if (event.data && event.data.size > 0) {
+        recordedBlobs.push(event.data);
+    }
+}
+function _handleStart(event){
+    console.log('MediaRecorder','onstart', event);
+    document.getElementById('play').style.display = 'none';
+    document.getElementById('download').style.display = 'none';
+}
+function _handleStop(event){
+    console.log('MediaRecorder','onstop', event);
+    document.getElementById('play').style.display = 'block';
+    document.getElementById('download').style.display = 'block';
+}
+</script>
+<script>
+document.addEventListener('DOMContentLoaded', _handleDOMEvent); //onReady
+document.getElementById('record'  ).addEventListener('click', _handleDOMEvent); //_getUserMedia
+document.getElementById('play'    ).addEventListener('click', _handleDOMEvent); //_getUserMedia
+document.getElementById('download').addEventListener('click', _handleDOMEvent); //_getUserMedia
+document.getElementById('video').addEventListener('loadedmetadata', _handleDOMEvent); //_showSize
+window.addEventListener('unload', _handleDOMEvent);
+</script>
+</body>
+</html>

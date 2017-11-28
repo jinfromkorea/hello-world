@@ -17,14 +17,14 @@
     </div>
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
 <script>
-var cameraCnt = 0, micCnt = 0; isFront=true;
-var constraints = {audio:true, video:true};
+let cameraCnt = 0, micCnt = 0; isFront=true;
+let constraints = {audio:true, video:true};
 
 function onReady(event){
     console.log(event);
     console.log("navigator.mediaDevices 가 있는지 체크함.")
     if( navigator.mediaDevices == undefined ) {
-        var new_EL = document.createElement("p");
+        let new_EL = document.createElement("p");
         new_EL.innerHTML = 'navigator.mediaDevices 가 없음.';
         document.getElementById('msgDiv').appendChild(new_EL);
         document.getElementById('startButton').disabled = true;
@@ -41,14 +41,14 @@ function onReady(event){
     ).then( () => { 
         console.log(cameraCnt);
         if( cameraCnt>1 ){
-            var new_EL = document.createElement("button");
+            let new_EL = document.createElement("button");
             new_EL.setAttribute('id', 'camera');
             new_EL.innerHTML = '카메라전환';
             new_EL.onclick = _changeCamera;
             document.getElementById('btnDiv').appendChild(new_EL);
             document.getElementById('video').style.width="100%";
         }else{
-            var new_EL = document.createElement("button");
+            let new_EL = document.createElement("button");
             new_EL.setAttribute('id', 'changeSize');
             new_EL.innerHTML = 'Full';
             new_EL.onclick = _changeSize;
@@ -61,7 +61,7 @@ function onReady(event){
 
 function _showSize(event) {
     console.log(event);
-    var new_EL = document.createElement("p");
+    let new_EL = document.createElement("p");
     new_EL.innerHTML = 'videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px';
     document.getElementById('msgDiv').appendChild(new_EL);
 }
@@ -72,7 +72,7 @@ function _changeSize(event) {
 }
 function _changeCamera(event){
     console.log(event);
-    var new_EL = document.createElement("p");
+    let new_EL = document.createElement("p");
     new_EL.innerHTML = '카메라 전환 ' + ( isFront? "user" : "environment" ) + ' -> ' + ( !isFront? "user" : "environment");
     document.getElementById('msgDiv').appendChild(new_EL);
 
@@ -102,7 +102,7 @@ function _handleStream(stream){
 }
 function _handleError(error){
     console.log(error);
-    var new_EL = document.createElement("p");
+    let new_EL = document.createElement("p");
     new_EL.innerHTML = error.name;
     document.getElementById('msgDiv').appendChild(new_EL);
 }
