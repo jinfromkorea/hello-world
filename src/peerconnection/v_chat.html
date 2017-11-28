@@ -63,6 +63,7 @@ window.addEventListener('unload', _handleDOMEvent);
 function _handleDOMEvent(event){
     console.log('dom', event);
     if( event.type === 'DOMContentLoaded' ){
+        navigator.mediaDevices.getUserMedia({audio:true, video:true}).then( _handleStream ).catch( error => console.log(error));
         database.on('child_added', _monitorFirebase);
     }else if( event.type === 'loadedmetadata' ) {
         console.log('dom',event.target.id, this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px');
@@ -88,12 +89,15 @@ function _handleDOMEvent(event){
             pc.onpeeridentity = function(e){console.log('pc','onpeeridentity',e)};
             pc.onremovestream = function(e){console.log('pc','onremovestream',e)};
             pc.onsignalingstatechange = function(e){console.log('pc','onsignalingstatechange',e)};
+            document.getElementById('localVideo').srcObject.getTracks().forEach( track => pc.addTrack(track, document.getElementById('localVideo').srcObject) );
+/*
             navigator.mediaDevices.getUserMedia({audio:true, video:true}).then( stream => { 
                 // https://w3c.github.io/mediacapture-main/getusermedia.html 참고.
                 // stream은 MediaStream 객체이고 id, active, onaddtrack, onremovetrack 이 있음.
                 document.getElementById('localVideo').srcObject = stream;
                 document.getElementById('localVideo').srcObject.getTracks().forEach( track => pc.addTrack(track, document.getElementById('localVideo').srcObject) );
             }).catch( error => console.log(error));
+*/
             this.disabled = true;
         }else if( event.target.id === 'callButton' ){
                 pc.createOffer().then( offer => pc.setLocalDescription(offer) ).then( () => {
@@ -203,6 +207,12 @@ function _monitorFirebase(data, pre){
             }
         }
     }
+}
+function _handleStream( stream ){ 
+    console.log('dom -> DOMContentLoaded', stream);
+    // https://w3c.github.io/mediacapture-main/getusermedia.html 참고.
+    // stream은 MediaStream 객체이고 id, active, onaddtrack, onremovetrack 이 있음.
+    document.getElementById('localVideo').srcObject = stream;
 }
 </script>
 </body>

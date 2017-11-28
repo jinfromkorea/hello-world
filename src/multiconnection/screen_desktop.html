@@ -11,6 +11,7 @@
 <body>
     <div id="btnDiv">
         <button id="start" value='desktop' disabled>View</button>
+        <button id="play" value='desktop' disabled>Play</button>
     </div>
     <div id="screen-container">
         <video id="remoteDesktop" autoplay playsinline controls></video>
@@ -30,6 +31,7 @@
 document.addEventListener('DOMContentLoaded', _handleDOMEvent);
 document.getElementById('remoteDesktop').addEventListener('loadedmetadata', _handleDOMEvent);
 document.getElementById('start').addEventListener('click', _handleDOMEvent);
+document.getElementById('play').addEventListener('click', _handleDOMEvent);
 
 let desktop;
 function _handleDOMEvent(event){
@@ -134,7 +136,7 @@ function setupSocket(socket, connection){
 function _handle_onstream(e){
     console.log('[share]['+this.sessionid+']', 'onstream', e, this);
     this.videosContainer.insertBefore(e.mediaElement, this.videosContainer.firstChild);
-    e.mediaElement.play()
+    //e.mediaElement.play()
 }
 function _handle_onstreamended(e){ 
     console.log('[share]['+this.sessionid+']', 'onstreamended', e, this); 

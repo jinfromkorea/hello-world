@@ -38,21 +38,13 @@ function _handleDOMEvent(event){
             document.getElementById('msgDiv').appendChild(new_EL);
             return;
         }
-        console.log('dom -> DOMContentLoaded', "MediaRecorder.isTypeSupported()로 mimeType 체크함.")
-        if ( MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ){
-            options.mimeType = 'video/webm;codecs=vp9';
-        } else if ( MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ) {
-            options.mimeType = 'video/webm;codecs=vp8';
-        } else if ( MediaRecorder.isTypeSupported('video/webm') ) {
-            options.mimeType = 'video/webm';
-        } else if ( MediaRecorder.isTypeSupported('video/mp4') ) {
-            options.mimeType = 'video/mp4';
-        } else {
+        console.log('dom -> DOMContentLoaded', "MediaRecorder를 지원하는지 체크함.")
+        if( typeof MediaRecorder === "undefined" ){
             var new_EL = document.createElement("p");
-            new_EL.innerHTML = 'MediaRecorder 에서 지원하지 않습니다.';
+            new_EL.innerHTML = 'MediaStream Recording API를 지원하지 않음.';
             document.getElementById('msgDiv').appendChild(new_EL);
+            return;
         }
-
         console.log('dom -> DOMContentLoaded', "스마트폰인지/데스크탑인지 체크함.")
         navigator.mediaDevices.enumerateDevices().then( _deviceInfos => { 
             _deviceInfos.forEach( _deviceInfo => { 
@@ -68,6 +60,21 @@ function _handleDOMEvent(event){
             }
         });
         navigator.mediaDevices.getUserMedia(constraints).then(_handleStream).catch(_handleError);
+
+        console.log('dom -> DOMContentLoaded', "MediaRecorder.isTypeSupported()로 mimeType 체크함.")
+        if ( MediaRecorder.isTypeSupported('video/webm;codecs=vp9') ){
+            options.mimeType = 'video/webm;codecs=vp9';
+        } else if ( MediaRecorder.isTypeSupported('video/webm;codecs=vp8') ) {
+            options.mimeType = 'video/webm;codecs=vp8';
+        } else if ( MediaRecorder.isTypeSupported('video/webm') ) {
+            options.mimeType = 'video/webm';
+        } else if ( MediaRecorder.isTypeSupported('video/mp4') ) {
+            options.mimeType = 'video/mp4';
+        } else {
+            var new_EL = document.createElement("p");
+            new_EL.innerHTML = 'MediaRecorder 에서 지원하지 않습니다.';
+            document.getElementById('msgDiv').appendChild(new_EL);
+        }
     }else if( event.type === 'click' ){
         if( event.target.id === 'record' ){
             isStartRecording = !isStartRecording;
