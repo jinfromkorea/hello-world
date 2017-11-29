@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>getUserMedia</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div id="ctrl-container">
+        <button id="startBtn" disabled>Start</button>
+    </div>
+    <div id="videos-container">
+    </div>
+    <div id="msgDiv">
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', _handleDOMEvent);
+document.getElementById('startBtn').addEventListener('click', _handleDOMEvent);
+window.addEventListener('unload', _handleDOMEvent);
+
+let camera;
+/* 
+ * RTCMultiConnection(camera) 생성자에는 2개 인자가 가능함. 
+ * 첫번째는 roomid 임.
+ *          connection.channel = connection.sessionid = roomid
+ * 두번째는 forceOptions임. useDefaultDevices, autoOpenOrJoin
+ */    
+function _handleDOMEvent(event){
+    console.log('dom', event);
+    if( event.type ==='DOMContentLoaded' ){
+        //화면이 로딩되면 생성함. 
+        camera = new RTCMultiConnection();
+        camera.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+        camera.session = { audio: true, video: true, oneway: true };
+        camera.sdpConstraints.mandatory = { OfferToReceiveAudio: false, OfferToReceiveVideo: false };
+        camera.videosContainer = document.getElementById('videos-container');
+        //event handler 등록.
+        camera.onleave       = _handle_onleave;
+        camera.onstream      = _handle_onstream;
+        camera.onstreamended = _handle_onstreamended;
+
+        document.getElementById('startBtn').disabled = false;// Start 버튼 활성화
+    }else if( event.type === 'click' ){
+        this.disabled = true; // Start 버튼 비활성화
+        camera.open('camera', function() {
+            console.log('dom -> click', camera.sessionid +' 방 개설');
+        });
+    }else if( event.type === 'unload' ){
+    }
+}
+function _handle_onleave(user){
+    console.log('[share]['+this.sessionid+']', 'onleave', user, this);
+}
+function _handle_onstream(event){
+    console.log('[share]['+this.sessionid+']', 'onstream', event, this);
+    event.mediaElement.removeAttribute('src');
+    event.mediaElement.removeAttribute('srcObject');
+    let video = document.createElement('video');
+    video.muted = true;
+    video.playsinline = true;
+    video.autoplay = true;
+    video.srcObject = event.stream;
+    video.id = event.streamid;
+    camera.videosContainer.appendChild(video);
+    video.play();
+}
+function _handle_onstreamended(event){
+    console.log('[share]['+this.sessionid+']', 'onstreamended', event, this); 
+    let mediaElement = document.getElementById(event.streamid);
+    if (mediaElement) {
+        mediaElement.parentNode.removeChild(mediaElement);
+    }
+}
+</script>
+</body>
+</html>

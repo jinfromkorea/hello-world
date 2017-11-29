@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>GetScreen</title>
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+</head>
+<body>
+    <div id="btnDiv">
+        <button id="startBtn" value='camera' disabled>View</button>
+    </div>
+    <div id="video-container">
+    </div>
+    <div id="msgDiv">
+    </div>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', _handleDOMEvent);
+document.getElementById('startBtn').addEventListener('click', _handleDOMEvent);
+window.addEventListener('unload', _handleDOMEvent);
+
+/* 
+ * RTCMultiConnection 생성자에는 2개 인자가 가능함. 
+ * 첫번째는 roomid 임.
+ *          connection.channel = connection.sessionid = roomid
+ * 두번째는 forceOptions임. useDefaultDevices, autoOpenOrJoin
+ */    
+let camera; //RTCMultiConnection
+function _handleDOMEvent(event){
+    console.log('dom', event);
+    if( event.type ==='DOMContentLoaded' ){
+        //화면이 로딩되면 생성함. 
+        camera = new RTCMultiConnection();
+        camera.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+        camera.session = { audio: true, video: true, oneway: true };
+        camera.sdpConstraints.mandatory = { OfferToReceiveAudio: true, OfferToReceiveVideo: true };
+        camera.videosContainer = document.getElementById('video-container');
+        //event handler 등록.
+        camera.onleave       = _handle_onleave;
+        camera.onstream      = _handle_onstream;
+        camera.onstreamended = _handle_onstreamended;
+
+        document.getElementById('startBtn').disabled = false;// Start 버튼 활성화
+    }else if( event.type === 'click' ){
+        this.disabled = true;
+        camera.join('camera');
+    }else if( event.type === 'unload' ){
+    }
+}
+function _handle_onstream(e){
+    console.log('[share]['+this.sessionid+']', 'onstream', e, this);
+    this.videosContainer.insertBefore(e.mediaElement, this.videosContainer.firstChild);
+}
+function _handle_onstreamended(e){ 
+    console.log('[share]['+this.sessionid+']', 'onstreamended', e, this); 
+    e.mediaElement.parentNode.removeChild(e.mediaElement);
+    alert('stream ended');
+}
+function _handle_onleave(user){
+    console.log('[share]['+this.sessionid+']', 'onleave', user, this);
+}
+</script>
+</body>
+</html>

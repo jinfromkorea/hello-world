@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, user-scalable=yes, initial-scale=1, maximum-scale=1">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <base target="_blank">
+    <title>MultiConnection</title>
+    <script src="https://aframe.io/releases/0.7.0/aframe.min.js"></script>
+</head>
+<body>
+    <a-scene stats id="scene">
+        <a-assets>
+            <video id="remoteVideo" autoplay playsinline></video>
+        </a-assets>
+        <a-sky color="#ECECEC"></a-sky>
+        <a-plane position="0 0 -4" rotation="-90 0 0" width="4" height="4" color="#7BC8A4"></a-plane>
+        <a-plane id="previewArea" position="0 1.5 -4.1" width="3" height="2" color="#000000">
+        </a-plane>
+        <a-camera>
+            <a-cursor></a-cursor>
+        </a-camera>
+    </a-scene>
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<script>
+var remoteSource = (function(global){
+    var streamid, title='camera1', videoElement=null;
+    function start(opts){
+        streamid     = opts.streamid;
+        videoElement = opts.videoElement;
+        showRemotePreview(opts.callback, opts.stream);
+    }
+    function showRemotePreview(_callback, _stream){
+        videoElement.srcObject = _stream;
+        videoElement.play();
+        if( _callback ){
+            _callback(_stream);
+        }
+    }
+    return {streamid:streamid, title:title, start:start}
+})(this);
+
+let camera = new RTCMultiConnection();
+camera = new RTCMultiConnection();
+camera.socketURL = 'https://rtcmulticonnection.herokuapp.com:443/';
+camera.session = { audio: true, video: true, oneway: true };
+camera.sdpConstraints.mandatory = { OfferToReceiveAudio: true, OfferToReceiveVideo: false };
+camera.videosContainer = document.getElementById('video-container');
+camera.onleave       = _handle_onleave;
+camera.onstream      = _handle_onstream;
+camera.onstreamended = _handle_onstreamended;
+
+function _handle_onstream(e){
+    console.log('[share]['+this.sessionid+']', 'onstream', e, this);
+    e.mediaElement.removeAttribute('src');
+    e.mediaElement.removeAttribute('srcObject');
+
+    let video = document.querySelector('#remoteVideo');
+    remoteSource.start({
+        videoElement : video, 
+        stream       : e.stream, 
+        streamid     : e.streamid,
+        connection   : this,
+        callback:function(){
+            var scene = document.querySelector('#previewArea');
+            var aobj = document.createElement('a-video');
+            aobj.setAttribute('id', 'screen-desktop');
+            aobj.setAttribute('src', '#remoteVideo' );
+            aobj.setAttribute('position', '0 0 0.01');
+            aobj.setAttribute('rotation', '0 0 0');
+            aobj.setAttribute('scale', '2.7 1.7 0.1');
+            aobj.setAttribute('playsinline', 'true');
+            scene.appendChild(aobj);
+        }
+    });
+}
+function _handle_onstreamended(e){ 
+    console.log('[share]['+this.sessionid+']', 'onstreamended', e, this); 
+    document.querySelector('#remoteVideo').srcObject = null;
+    document.querySelector('#previewArea').removeChild(document.querySelector('#screen-desktop'));
+}
+function _handle_onleave(user){
+    console.log('[share]['+this.sessionid+']', 'onleave', user, this);
+}
+</script>
+<script>
+function onReady() {
+    camera.join('camera');
+}
+document.addEventListener('DOMContentLoaded', onReady);
+</script>
+</body>
+</html>

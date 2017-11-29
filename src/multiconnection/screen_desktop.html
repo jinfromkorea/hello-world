@@ -11,7 +11,6 @@
 <body>
     <div id="btnDiv">
         <button id="start" value='desktop' disabled>View</button>
-        <button id="play" value='desktop' disabled>Play</button>
     </div>
     <div id="screen-container">
         <video id="remoteDesktop" autoplay playsinline controls></video>
@@ -22,18 +21,17 @@
 <script src="https://rtcmulticonnection.herokuapp.com/dist/RTCMultiConnection.js"></script>
 <script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', _handleDOMEvent);
+document.getElementById('remoteDesktop').addEventListener('loadedmetadata', _handleDOMEvent);
+document.getElementById('start').addEventListener('click', _handleDOMEvent);
+
 /* 
  * RTCMultiConnection 생성자에는 2개 인자가 가능함. 
  * 첫번째는 roomid 임.
  *          connection.channel = connection.sessionid = roomid
  * 두번째는 forceOptions임. useDefaultDevices, autoOpenOrJoin
  */    
-document.addEventListener('DOMContentLoaded', _handleDOMEvent);
-document.getElementById('remoteDesktop').addEventListener('loadedmetadata', _handleDOMEvent);
-document.getElementById('start').addEventListener('click', _handleDOMEvent);
-document.getElementById('play').addEventListener('click', _handleDOMEvent);
-
-let desktop;
+let desktop; //RTCMultiConnection
 function _handleDOMEvent(event){
     console.log(event);
     if( event.type ==='DOMContentLoaded' ){
