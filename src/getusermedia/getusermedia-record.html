@@ -126,28 +126,32 @@ function _handleDOMEvent(event){
     }else if( event.type === 'unload' ){
     }
 }
+// navigator.mediaDevices.getUserMedia()의 promise
 function _handleStream(stream){
     //console.log(stream);
     window.stream = stream;
     document.getElementById('video').srcObject = stream;
 }
+// navigator.mediaDevices.getUserMedia()의 promise
 function _handleError(error){
     console.log(error);
     var new_EL = document.createElement("p");
     new_EL.innerHTML = error.name;
     document.getElementById('msgDiv').appendChild(new_EL);
 }
+// MediaRecorder 의 event handler
 function _handleDataAvailable(event){
-    //console.log('MediaRecorder','ondataavailable', event);
     if (event.data && event.data.size > 0) {
         recordedBlobs.push(event.data);
     }
 }
+// MediaRecorder 의 event handler
 function _handleStart(event){
     console.log('MediaRecorder','onstart', event);
     document.getElementById('play').style.display = 'none';
     document.getElementById('download').style.display = 'none';
 }
+// MediaRecorder 의 event handler
 function _handleStop(event){
     console.log('MediaRecorder','onstop', event);
     document.getElementById('play').style.display = 'block';

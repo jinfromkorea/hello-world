@@ -22,6 +22,7 @@
 'adapter.js'는 브라우저의 차이. spec의 변화를 추상화하였다. 호환성을 위해서 써주는게 좋다는 것인듯. 
 -->
 <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/annyang/2.6.0/annyang.min.js"></script>
 <script>
 let cameraCnt = 0, micCnt = 0; isFront=true;
 let constraints = {audio:true, video:true};
@@ -53,9 +54,21 @@ function onReady(event){
         }else{
             document.getElementById('changeSize').style.display = 'block';
             document.getElementById('changeSize').disabled = true;
-            document.getElementById('btnDiv').appendChild(new_EL);
         }
     });
+    if( annyang ){
+        var commands = {
+            '시작' : _getUserMedia
+        };
+        annyang.setLanguage('ko');
+        annyang.addCommands(commands);
+        annyang.start();
+        annyang.addCallback('resultMatch', function(userSaid,commandText,phrases){ console.log('resultMatch', userSaid, commandText, phrases);})
+        annyang.addCallback('result', function(type,callback,context){ console.log('resultMatch', type,callback,context);})
+        let new_EL = document.createElement("p");
+        new_EL.innerHTML = '[시작] 이라고 말해보세요.';
+        document.getElementById('msgDiv').appendChild(new_EL);
+    }
 }
 // iPhone iOS의 버전이 11이상이어야 webrtc 사용가능. 그래서 navigator.mediaDevices 가 없을수 있음. 
 
