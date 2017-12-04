@@ -1,7 +1,9 @@
 {
-  "short_name": "AirHorner",
-  "name": "Kinlan's AirHorner of Infamy",
+  "short_name": "JinfromKorea",
+  "name": "Yujin's Demos on GitHub",
   "background_color": "#2196F3",
+  "display": "standalone",
+  "theme_color": "#2196F3",
   "icons": [
     {
       "src": "launcher-icon-1x.png",

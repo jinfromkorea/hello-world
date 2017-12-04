@@ -7,11 +7,7 @@
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
 </head>
 <body>
-    <div id="btnDiv">
-      <button id="startButton" style="display:none">Start</button>
-      <button id="camera" style="display:none">카메라전환</button>
-      <button id="changeSize" style="display:none">Full</button>
-    </div>
+    <div id=commandDiv></div>
     <div id="videoDiv">
         <video id="video" autoplay muted playsinline></video>
     </div>
@@ -36,7 +32,7 @@ function onReady(event){
         document.getElementById('msgDiv').appendChild(new_EL);
         return;
     }
-    document.getElementById('startButton').style.display = 'block';
+    document.getElementById('commandDiv').innerHTML = '사용 가능한 커맨드 : 시작';
     console.log("2개 이상의 카메라가 있는지 체크함.")
     navigator.mediaDevices.enumerateDevices().then( _deviceInfos => { 
         console.log(_deviceInfos); // MediaDeviceInfo 가 n개 나타남. videoinput, audioinput, audiooutput
@@ -49,16 +45,15 @@ function onReady(event){
     ).then( () => { 
         console.log(cameraCnt);
         if( cameraCnt>1 ){
-            document.getElementById('camera').style.display = 'block';
+            document.getElementById('commandDiv').innerHTML = '사용 가능한 커맨드 : 시작 | 카메라변경';
             document.getElementById('video').style.width = "100%";
-        }else{
-            document.getElementById('changeSize').style.display = 'block';
-            document.getElementById('changeSize').disabled = true;
         }
     });
     if( annyang ){
         var commands = {
-            '시작' : _getUserMedia
+            '시작' : _getUserMedia,
+            '카메라변경' : _changeCamera,
+            '종료' : history.back()
         };
         annyang.setLanguage('ko');
         annyang.addCommands(commands);
@@ -78,11 +73,6 @@ function _showSize(event) {
     new_EL.innerHTML = 'videoWidth: ' + this.videoWidth +'px,  videoHeight: ' + this.videoHeight + 'px';
     document.getElementById('msgDiv').appendChild(new_EL);
 }
-function _changeSize(event) {
-    console.log(event);
-    document.getElementById('video').style.width='100%';
-    this.disabled = true;
-}
 function _changeCamera(event){
     console.log(event);
     let new_EL = document.createElement("p");
@@ -99,10 +89,6 @@ function _getUserMedia(event) {
 
     // https://w3c.github.io/mediacapture-main/getusermedia.html 참고.
     navigator.mediaDevices.getUserMedia(constraints).then(_handleStream).catch(_handleError);
-    if( document.getElementById('changeSize') ){
-        document.getElementById('changeSize').disabled = false;
-    }
-
     /*
     // _stream은 MediaStream 객체이고 id, active, onaddtrack, onremovetrack 이 있음.
     navigator.mediaDevices.getUserMedia(constraints)
@@ -123,9 +109,6 @@ function _handleError(error){
 </script>
 <script>
 document.addEventListener('DOMContentLoaded', onReady);
-document.getElementById('startButton').addEventListener('click', _getUserMedia);
-document.getElementById('camera').addEventListener('click', _changeCamera);
-document.getElementById('changeSize').addEventListener('click', _changeSize);
 document.getElementById('video').addEventListener('loadedmetadata', _showSize);
 </script>
 </body>

@@ -1,7 +1,6 @@
 {
-  "short_name": "AirHorner",
-  "name": "Kinlan's AirHorner of Infamy",
-  "background_color": "#2196F3",
+  "short_name": "JinfromKorea",
+  "name": "Yujin's Demos on GitHub",
   "icons": [
     {
       "src": "launcher-icon-1x.png",
@@ -14,10 +13,19 @@
       "sizes": "96x96"
     },
     {
+      "src": "launcher-icon-3x.png",
+      "type": "image/png",
+      "sizes": "152x152"
+    },
+    {
       "src": "launcher-icon-4x.png",
       "type": "image/png",
       "sizes": "192x192"
     }
   ],
-  "start_url": "index.html?launcher=true"
+  "start_url": "index.html?launcher=true",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#2196F3",
+  "theme_color": "#2196F3"
 }
