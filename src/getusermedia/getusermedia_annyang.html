@@ -49,11 +49,12 @@ function onReady(event){
             document.getElementById('video').style.width = "100%";
         }
     });
+
     if( annyang ){
         var commands = {
             '시작' : _getUserMedia,
             '카메라변경' : _changeCamera,
-            '종료' : history.back()
+            '종료' : _close
         };
         annyang.setLanguage('ko');
         annyang.addCommands(commands);
@@ -63,10 +64,15 @@ function onReady(event){
         let new_EL = document.createElement("p");
         new_EL.innerHTML = '[시작] 이라고 말해보세요.';
         document.getElementById('msgDiv').appendChild(new_EL);
+    }else{
+
     }
 }
 // iPhone iOS의 버전이 11이상이어야 webrtc 사용가능. 그래서 navigator.mediaDevices 가 없을수 있음. 
 
+function _close(){
+    history.back();
+}
 function _showSize(event) {
     console.log(event);
     let new_EL = document.createElement("p");
