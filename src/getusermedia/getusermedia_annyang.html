@@ -65,7 +65,9 @@ function onReady(event){
         new_EL.innerHTML = '[시작] 이라고 말해보세요.';
         document.getElementById('msgDiv').appendChild(new_EL);
     }else{
-
+        let new_EL = document.createElement("p");
+        new_EL.innerHTML = 'Annyang API를 지원하지 않습니다.';
+        document.getElementById('msgDiv').appendChild(new_EL);
     }
 }
 // iPhone iOS의 버전이 11이상이어야 webrtc 사용가능. 그래서 navigator.mediaDevices 가 없을수 있음. 
