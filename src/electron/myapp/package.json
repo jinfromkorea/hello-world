@@ -1,0 +1,16 @@
+{
+  "name": "startup",
+  "version": "1.0.0",
+  "description": "Startup desktop app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "poscoict",
+  "license": "ISC",
+  "dependencies": {
+    "electron": "^1.7.10",
+    "react": "^16.2.0",
+    "react-dom": "^16.2.0"
+  }
+}

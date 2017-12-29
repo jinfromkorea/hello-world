@@ -2,3 +2,8 @@
 src/nodejs/node_modules/.bin/mime
 src/nodejs/node_modules/
 src/nodejs/myapp/node_modules/
+src/react/node_modules/.bin/mime
+src/react/node_modules/
+src/react/my-app/node_modules/
+src/react/npm-debug.log
+src/electron/myapp/node_modules/
