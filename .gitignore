@@ -7,3 +7,4 @@ src/react/node_modules/
 src/react/my-app/node_modules/
 src/react/npm-debug.log
 src/electron/myapp/node_modules/
+package-lock.json
